@@ -21,8 +21,13 @@ export type Message = {
   metadata?: {
     model?: string;
     latency?: number;
+    mode?: string;
+    strategy?: string;
+    chunks?: string[];
+  };
   isStreaming?: boolean;
-}
+  createdAt: string;
+};
 
 export interface Chat {
   id: string;
