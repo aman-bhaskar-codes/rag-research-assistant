@@ -1,10 +1,16 @@
+"use client";
+
 import Sidebar from "@/components/sidebar/Sidebar";
 import ChatContainer from "@/components/chat/ChatContainer";
 import SettingsPanel from "@/components/settings/SettingsPanel";
+import UploadModal from "@/components/upload/UploadModal";
+import { useUIStore } from "@/stores/ui-store";
 
 export default function Home() {
+  const uploadModalOpen = useUIStore((s) => s.uploadModalOpen);
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#0B0F17] text-white">
+    <div className="flex h-screen w-full overflow-hidden relative">
       {/* Sidebar */}
       <Sidebar />
 
@@ -15,6 +21,8 @@ export default function Home() {
 
       {/* Right Panels */}
       <SettingsPanel />
+
+      {uploadModalOpen && <UploadModal />}
     </div>
   );
 }

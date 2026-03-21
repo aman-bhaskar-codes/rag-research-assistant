@@ -1,21 +1,26 @@
-"use client";
-
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Message } from "@/features/chat/types";
 import SourceList from "../sources/SourceList";
+import MarkdownRenderer from "../ui/MarkdownRenderer";
 
 export default function MessageItem({ message }: { message: Message }) {
   const isUser = message.role === "user";
   const [showSources, setShowSources] = useState(false);
 
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ease: "easeOut", duration: 0.3 }}
+      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+    >
       <div
         className={`max-w-xl px-4 py-3 rounded-2xl text-sm leading-relaxed ${
           isUser ? "bg-blue-600 text-white" : "bg-[#1E293B] text-gray-200"
         }`}
       >
-        {message.content}
+        <MarkdownRenderer content={message.content} />
         
         {!isUser && message.sources && message.sources.length > 0 && (
           <div className="mt-2 border-t border-gray-700/50 pt-2">
@@ -37,6 +42,6 @@ export default function MessageItem({ message }: { message: Message }) {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
