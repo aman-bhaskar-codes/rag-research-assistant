@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Message } from "@/features/chat/types";
-import SourceCard from "../sources/SourceCard";
+import SourceList from "../sources/SourceList";
 
 export default function MessageItem({ message }: { message: Message }) {
   const isUser = message.role === "user";
+  const [showSources, setShowSources] = useState(false);
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -15,14 +17,16 @@ export default function MessageItem({ message }: { message: Message }) {
       >
         {message.content}
         
-        {message.sources && message.sources.length > 0 && (
-          <div className="mt-4 flex flex-col gap-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sources</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {message.sources.map((src, i) => (
-                <SourceCard key={i} source={src} index={i} />
-              ))}
-            </div>
+        {!isUser && message.sources && message.sources.length > 0 && (
+          <div className="mt-2 border-t border-gray-700/50 pt-2">
+            <button
+              onClick={() => setShowSources(!showSources)}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+            >
+              {showSources ? "Hide sources" : "View sources"}
+            </button>
+
+            {showSources && <SourceList sources={message.sources} />}
           </div>
         )}
 

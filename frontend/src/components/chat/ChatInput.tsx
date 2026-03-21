@@ -1,16 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { useSendMessage } from "@/features/chat/hooks";
+import { useChatStore } from "@/features/chat/store";
+import { streamChat } from "@/lib/stream";
+import { v4 as uuidv4 } from "uuid";
 
 export default function ChatInput() {
   const [input, setInput] = useState("");
-  const { send } = useSendMessage();
+  
+  // Use our store's existing actions mapped to what the user requested
+  const addMessage = useChatStore((s) => s.addMessage);
+  // Our store uses startStream, appendToken, finalizeStream. We'll map them.
+  const startStreaming = useChatStore((s) => s.startStream);
+  const updatePartial = useChatStore((s) => s.updatePartial);
+  const finishStreaming = useChatStore((s) => s.finalizeStreamWithCompleteMessage);
+  const setError = useChatStore((s) => s.setError);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
-    send(input.trim());
+    const userMessage = {
+      id: uuidv4(),
+      role: "user" as const,
+      content: input,
+      createdAt: new Date().toISOString(),
+    };
+
+    addMessage(userMessage);
+    
+    // We pass a dummy controller since the user's code relies on manual startStreaming
+    startStreaming(new AbortController());
+
+    let accumulated = "";
+
+    await streamChat({
+      query: input,
+
+      onToken: (token) => {
+        accumulated += token;
+        updatePartial(accumulated);
+      },
+
+      onDone: (data) => {
+        finishStreaming({
+          id: uuidv4(),
+          role: "assistant",
+          content: accumulated,
+          sources: data?.sources || [],
+          createdAt: new Date().toISOString(),
+        });
+      },
+
+      onError: (err) => {
+        console.error(err);
+        setError(err instanceof Error ? err.message : String(err));
+      },
+    });
+
     setInput("");
   };
 

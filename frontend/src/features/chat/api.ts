@@ -1,7 +1,5 @@
 import apiClient from "@/lib/api-client";
-import { streamChat } from "@/lib/stream";
-import type { StreamCallbacks, StreamRequestBody } from "@/lib/stream";
-import type { Chat, ChatListItem, SendMessageRequest } from "./types";
+import type { Chat, ChatListItem } from "./types";
 
 // ─── Chat API ────────────────────────────────────────────────────────────────
 
@@ -36,20 +34,4 @@ export async function deleteChat(chatId: string): Promise<void> {
   await apiClient.delete(`/chats/${chatId}`);
 }
 
-/**
- * Send a message via SSE streaming
- *
- * @returns AbortController to cancel the stream
- */
-export function sendMessage(
-  request: SendMessageRequest,
-  callbacks: StreamCallbacks
-): AbortController {
-  const body: StreamRequestBody = {
-    message: request.message,
-    chat_id: request.chat_id,
-    settings: request.settings,
-  };
 
-  return streamChat("/chat", body, callbacks);
-}

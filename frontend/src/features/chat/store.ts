@@ -21,13 +21,14 @@ interface ChatState {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   /** Add a complete message to the list */
-  addMessage: (message: Omit<Message, "id" | "createdAt">) => void;
+  addMessage: (message: Partial<Message> & { role: "user" | "assistant", content: string }) => void;
   /** Start streaming: add a placeholder assistant message */
   startStream: (controller: AbortController) => void;
-  /** Append a token to the streaming message */
-  appendToken: (token: string) => void;
-  /** Finalize the stream: mark assistant message as complete */
-  finalizeStream: (sources?: Source[]) => void;
+  /** Replace the partial message entirely */
+  updatePartial: (text: string) => void;
+  /** Finalize the stream by pushing a complete message and clearing partial */
+  finalizeStreamWithCompleteMessage: (finalMessage: Message) => void;
+  
   /** Cancel the active stream */
   cancelStream: () => void;
   /** Set the selected chat and load its messages */
@@ -36,6 +37,10 @@ interface ChatState {
   setSources: (sources: Source[]) => void;
   /** Clear all messages (for new chat) */
   clearMessages: () => void;
+
+  /** Error state */
+  error: string | null;
+  setError: (err: string | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -45,6 +50,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   selectedChatId: null,
   currentSources: [],
   streamController: null,
+  error: null,
+
+  setError: (err) => set({ error: err }),
 
   addMessage: (msg) =>
     set((s) => ({
@@ -76,39 +84,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ],
     })),
 
-  appendToken: (token) =>
-    set((s) => {
-      const newPartial = s.partialMessage + token;
-      const messages = [...s.messages];
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && lastMsg.isStreaming) {
-        messages[messages.length - 1] = {
-          ...lastMsg,
-          content: newPartial,
-        };
-      }
-      return { partialMessage: newPartial, messages };
-    }),
+  updatePartial: (text) =>
+    set(() => ({
+      partialMessage: text,
+    })),
 
-  finalizeStream: (sources) =>
-    set((s) => {
-      const messages = [...s.messages];
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && lastMsg.isStreaming) {
-        messages[messages.length - 1] = {
-          ...lastMsg,
-          isStreaming: false,
-          sources: sources || s.currentSources,
-        };
-      }
-      return {
-        messages,
-        isStreaming: false,
-        partialMessage: "",
-        streamController: null,
-        currentSources: sources || s.currentSources,
-      };
-    }),
+  finalizeStreamWithCompleteMessage: (finalMessage) =>
+    set((s) => ({
+      messages: [...s.messages.filter(m => !m.isStreaming), finalMessage],
+      isStreaming: false,
+      partialMessage: "",
+      streamController: null,
+    })),
 
   cancelStream: () => {
     const { streamController } = get();

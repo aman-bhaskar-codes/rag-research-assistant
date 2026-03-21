@@ -26,8 +26,9 @@ export default function MessageList() {
         {/* Streaming Message */}
         {isStreaming && (
           <div className="flex justify-start">
-            <div className="max-w-xl px-4 py-3 rounded-2xl text-sm leading-relaxed bg-[#1E293B] animate-pulse text-gray-200">
-              {partialMessage || "..."}
+            <div className="max-w-xl px-4 py-3 rounded-2xl text-sm bg-[#1E293B] text-gray-200">
+              <span className="whitespace-pre-wrap">{partialMessage}</span>
+              <span className="ml-1 animate-pulse">▍</span>
             </div>
           </div>
         )}
