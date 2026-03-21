@@ -5,7 +5,7 @@ import { useChats, useCreateChat } from "@/features/chat/hooks";
 import { useChatStore } from "@/features/chat/store";
 
 export default function Sidebar() {
-  const toggleSettingsPanel = useUIStore((s) => s.toggleSettingsPanel);
+  const openModal = useUIStore((s) => s.openModal);
   const { data: chats, isLoading } = useChats();
   const { mutate: createChat, isPending } = useCreateChat();
   
@@ -65,7 +65,7 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-gray-800 flex-shrink-0 text-sm flex gap-2">
         <button 
-          onClick={toggleSettingsPanel}
+          onClick={() => openModal("settings")}
           className="flex-1 text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 px-2 py-2 rounded-lg hover:bg-[#1E293B]"
           title="Settings"
         >
