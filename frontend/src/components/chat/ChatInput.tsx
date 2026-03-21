@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useChatStore } from "@/features/chat/store";
+import { useModeStore } from "@/features/modes/store";
+import { useSettingsStore } from "@/features/settings/store";
 import { streamChat } from "@/lib/stream";
 import { v4 as uuidv4 } from "uuid";
 
 export default function ChatInput() {
   const [input, setInput] = useState("");
   
-  // Use our store's existing actions mapped to what the user requested
+  const { mode } = useModeStore();
+  const settings = useSettingsStore();
+
   const addMessage = useChatStore((s) => s.addMessage);
-  // Our store uses startStream, appendToken, finalizeStream. We'll map them.
   const startStreaming = useChatStore((s) => s.startStream);
   const updatePartial = useChatStore((s) => s.updatePartial);
   const finishStreaming = useChatStore((s) => s.finalizeStreamWithCompleteMessage);
@@ -35,6 +38,14 @@ export default function ChatInput() {
 
     await streamChat({
       query: input,
+      metadata: {
+        mode,
+        model: settings.model,
+        rag: {
+          strategy: settings.rag.strategy,
+          top_k: settings.rag.top_k,
+        },
+      },
 
       onToken: (token) => {
         accumulated += token;
@@ -47,6 +58,7 @@ export default function ChatInput() {
           role: "assistant",
           content: accumulated,
           sources: data?.sources || [],
+          metadata: { mode, latency: data?.latency, strategy: settings.rag.strategy, chunks: data?.chunks || [] },
           createdAt: new Date().toISOString(),
         });
       },

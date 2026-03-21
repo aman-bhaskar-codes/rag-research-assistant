@@ -16,13 +16,16 @@ export default function MessageDebugPanel({ data }: { data: any }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
+           <span className="text-gray-500">Mode:</span> <span className="text-purple-400">{data.mode || "unknown"}</span>
+        </div>
+        <div>
            <span className="text-gray-500">Model:</span> <span className="text-blue-400">{data.model || "unknown"}</span>
         </div>
         <div>
            <span className="text-gray-500">Latency:</span> <span className="text-orange-400">{data.latency || 0}ms</span>
         </div>
-        <div className="col-span-2">
-           <span className="text-gray-500">Retrieval Pipeline:</span> <span className="text-green-400">{data.strategy || "hybrid"}</span>
+        <div>
+           <span className="text-gray-500">Strategy:</span> <span className="text-green-400">{data.strategy || "hybrid"}</span>
         </div>
       </div>
 

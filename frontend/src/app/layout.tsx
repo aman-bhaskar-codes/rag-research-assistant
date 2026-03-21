@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="h-full flex flex-col bg-[#0B0F17] text-white overflow-hidden">
+      <body className="h-full flex flex-col bg-gradient-to-b from-[#020617] via-[#020617] to-[#0F172A] text-white overflow-hidden">
         <GlobalShortcuts />
         <Providers>{children}</Providers>
       </body>

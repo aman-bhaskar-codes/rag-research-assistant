@@ -13,18 +13,14 @@ export interface Source {
   metadata?: Record<string, unknown>;
 }
 
-export interface Message {
+export type Message = {
   id: string;
-  role: MessageRole;
+  role: "user" | "assistant";
   content: string;
   sources?: Source[];
-  /** Documented as timestamp earlier, changed to createdAt for consistency */
-  createdAt: string;
   metadata?: {
     model?: string;
     latency?: number;
-  };
-  /** True while this message is still being streamed */
   isStreaming?: boolean;
 }
 

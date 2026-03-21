@@ -1,10 +1,12 @@
 export async function streamChat({
   query,
+  metadata,
   onToken,
   onDone,
   onError,
 }: {
   query: string;
+  metadata?: Record<string, any>;
   onToken: (token: string) => void;
   onDone: (data?: any) => void;
   onError: (err: any) => void;
@@ -15,7 +17,7 @@ export async function streamChat({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, ...metadata }),
     });
 
     if (!res.body) throw new Error("No response body");
