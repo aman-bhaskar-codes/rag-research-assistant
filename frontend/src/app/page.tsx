@@ -4,6 +4,7 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import ChatContainer from "@/components/chat/ChatContainer";
 import SettingsPanel from "@/components/settings/SettingsPanel";
 import UploadModal from "@/components/upload/UploadModal";
+import DebugPanel from "@/components/debug/DebugPanel";
 import { useUIStore } from "@/stores/ui-store";
 
 export default function Home() {
@@ -23,6 +24,7 @@ export default function Home() {
       <SettingsPanel />
 
       {uploadModalOpen && <UploadModal />}
+      <DebugPanel />
     </div>
   );
 }

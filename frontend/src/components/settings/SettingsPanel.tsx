@@ -28,19 +28,34 @@ export default function SettingsPanel() {
         {/* Model Selection */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Model
+            Model Selection
           </label>
-          <select
-            value={settings.model}
-            onChange={(e) => settings.updateSettings({ model: e.target.value })}
-            className="w-full bg-[#1E293B] border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500 transition-colors"
-          >
-            {MODEL_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-1.5">
+            {MODEL_OPTIONS.map((m) => {
+              const isLocked = m.tier === "premium" && settings.plan !== "premium";
+
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => !isLocked && settings.updateSettings({ model: m.value })}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
+                    settings.model === m.value
+                      ? "bg-blue-600 border-blue-500 text-white"
+                      : "bg-[#1E293B] border-transparent text-gray-300 hover:bg-[#273549]"
+                  } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{m.label}</span>
+                    {isLocked && (
+                      <span className="text-[10px] text-yellow-400 font-medium tracking-wide uppercase">
+                        🔒 Premium
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Temperature */}
@@ -123,14 +138,22 @@ export default function SettingsPanel() {
         </div>
       </div>
       
-      {/* Footer / Reset Box */}
-      <div className="p-4 border-t border-gray-800 flex-shrink-0">
-         <button 
-           onClick={settings.resetSettings}
-           className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-600 rounded-lg transition-colors"
-         >
-           Reset to Defaults
-         </button>
+      {/* Footer / Upgrades */}
+      <div className="p-4 border-t border-gray-800 flex-shrink-0 space-y-4">
+        {settings.plan !== "premium" && (
+          <div className="p-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-lg text-sm transition-all hover:border-purple-500/50 cursor-pointer">
+            <p className="text-gray-200 font-medium text-xs">Unlock Gemini Pro & advanced RAG precision.</p>
+            <button className="block mt-2 text-xs text-blue-400 font-medium hover:underline flex items-center gap-1">
+              ✨ Upgrade to Premium
+            </button>
+          </div>
+        )}
+        <button 
+          onClick={settings.resetSettings}
+          className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-600 rounded-lg transition-colors"
+        >
+          Reset Config to Defaults
+        </button>
       </div>
     </div>
   );

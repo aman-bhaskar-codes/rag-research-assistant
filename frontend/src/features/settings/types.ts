@@ -2,6 +2,8 @@
 
 export type RAGStrategy = "hybrid" | "semantic" | "keyword";
 
+export type Plan = "free" | "premium";
+
 export interface RAGConfig {
   strategy: RAGStrategy;
   top_k: number;
@@ -17,4 +19,5 @@ export interface Settings {
   temperature: number;
   rag: RAGConfig;
   memory: MemoryConfig;
+  plan: Plan;
 }

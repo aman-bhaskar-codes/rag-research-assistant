@@ -20,14 +20,17 @@ export const DEFAULT_SETTINGS = {
   memory: {
     enabled: true,
   },
+  plan: "free",
 } as const;
 
 // ─── Model Options ───────────────────────────────────────────────────────────
 
 export const MODEL_OPTIONS = [
-  { value: "qwen", label: "Qwen 2.5" },
-  { value: "llama", label: "Llama 3" },
-  { value: "mistral", label: "Mistral" },
+  { value: "phi3:mini", label: "phi3:mini", tier: "free" },
+  { value: "gemma:2b", label: "gemma:2b", tier: "free" },
+  { value: "qwen2.5:3b", label: "qwen2.5:3b", tier: "free" },
+  { value: "mistral", label: "mistral", tier: "free+" },
+  { value: "gemini-pro", label: "gemini-pro", tier: "premium" },
 ] as const;
 
 // ─── RAG Strategy Options ────────────────────────────────────────────────────
