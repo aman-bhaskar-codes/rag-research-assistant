@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
+import GlobalShortcuts from "@/components/ui/GlobalShortcuts";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
       <body className="h-full flex flex-col bg-[#0B0F17] text-white overflow-hidden">
+        <GlobalShortcuts />
         <Providers>{children}</Providers>
       </body>
     </html>

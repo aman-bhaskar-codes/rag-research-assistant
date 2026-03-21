@@ -2,6 +2,7 @@
 
 import { useUIStore } from "@/stores/ui-store";
 import { Settings } from "lucide-react";
+import ProfileDropdown from "../profile/ProfileDropdown";
 
 export default function TopBar() {
   const { openModal } = useUIStore();
@@ -23,12 +24,7 @@ export default function TopBar() {
           <Settings size={16} /> <span className="hidden sm:inline">Settings</span>
         </button>
 
-        <button 
-          onClick={() => openModal("profile")}
-          className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center text-sm font-medium shadow-md transition-transform hover:scale-105"
-        >
-          A
-        </button>
+        <ProfileDropdown />
       </div>
     </div>
   );

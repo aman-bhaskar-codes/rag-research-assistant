@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Message } from "@/features/chat/types";
 import SourceList from "../sources/SourceList";
 import MarkdownRenderer from "../ui/MarkdownRenderer";
+import MessageDebugPanel from "../debug/MessageDebugPanel";
 
 export default function MessageItem({ message }: { message: Message }) {
   const isUser = message.role === "user";
@@ -16,8 +17,8 @@ export default function MessageItem({ message }: { message: Message }) {
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-xl px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-          isUser ? "bg-blue-600 text-white" : "bg-[#1E293B] text-gray-200"
+        className={`max-w-xl w-full px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+          isUser ? "bg-blue-600 text-white" : "bg-[#1E293B] text-gray-200 shadow-md"
         }`}
       >
         <MarkdownRenderer content={message.content} />
@@ -35,12 +36,7 @@ export default function MessageItem({ message }: { message: Message }) {
           </div>
         )}
 
-        {message.metadata && (
-          <div className="mt-2 flex gap-2 text-[10px] text-gray-400 opacity-70">
-            {message.metadata.model && <span>{message.metadata.model}</span>}
-            {message.metadata.latency && <span>{message.metadata.latency}ms</span>}
-          </div>
-        )}
+        {message.metadata && <MessageDebugPanel data={message.metadata} />}
       </div>
     </motion.div>
   );

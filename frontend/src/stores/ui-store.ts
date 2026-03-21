@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 // ─── UI Store ────────────────────────────────────────────────────────────────
 
-export type ModalType = "settings" | "profile" | "memory" | "upgrade" | "upload" | null;
+export type ModalType = "settings" | "profile" | "memory" | "upgrade" | "upload" | "command" | null;
 
 interface UIState {
   sidebarOpen: boolean;
