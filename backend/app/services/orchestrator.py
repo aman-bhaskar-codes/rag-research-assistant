@@ -1,6 +1,7 @@
 import json
-class Orchestrator:
 
+
+class Orchestrator:
 
     def __init__(self, memory_client, retrieval_client, llm_service):
         self.memory = memory_client
@@ -28,17 +29,13 @@ class Orchestrator:
             limit=5
         )
 
-        # 2. QUERY REWRITE (dummy for now)
         rewritten_query = request.query
 
-        # 3. DOMAIN ROUTING
         routing = self.route_by_mode(request.mode)
 
-# 🔥 override if user explicitly sends model
         model = request.model if request.model != "auto" else routing["model"]
         strategy = routing["strategy"]
 
-        # 4. RETRIEVAL
         rag_result = await self.retrieval.retrieve(
             query=rewritten_query,
             strategy=strategy,
@@ -48,21 +45,18 @@ class Orchestrator:
         chunks = rag_result.get("chunks", [])
         relationships = rag_result.get("relationships", [])
 
-        # 5. GUARD
         if not chunks:
             yield "No relevant documents found."
             return
 
-
         debug_info = {
-        "strategy": strategy,
-        "model": model,
-        "chunks": chunks,
-        "relationships": relationships,
-        "latency": rag_result.get("meta", {})
-    }    
+            "strategy": strategy,
+            "model": model,
+            "chunks": chunks,
+            "relationships": relationships,
+            "latency": rag_result.get("meta", {})
+        }
 
-        # 6. PROMPT BUILD
         prompt = self.build_prompt(
             query=rewritten_query,
             history=history,
@@ -71,22 +65,24 @@ class Orchestrator:
             mode=request.mode
         )
 
-        # 7. STREAMING RESPONSE
+        # 🔥 accumulate response
+        full_response = ""
+
         async for token in self.llm.stream(prompt, model=model):
+            full_response += token
             yield token
 
-         # 🔥 DEBUG
+        # DEBUG
+        if request.debug:
+            yield "\n\n--- DEBUG INFO ---\n"
+            yield json.dumps(debug_info, indent=2)
 
-        if  request.debug:
-         yield "\n\n--- DEBUG INFO ---\n"
-         yield json.dumps(debug_info, indent=2)   
-
-        # 8. SAVE MEMORY (optional async fire-and-forget later)
+        # 🔥 SAVE RESPONSE
         await self.memory.save_interaction(
             request.user_id,
             request.session_id,
             request.query,
-            "response_placeholder"
+            full_response
         )
 
     def build_prompt(self, query, history, chunks, relationships, mode):
@@ -118,4 +114,3 @@ Instructions:
 - Answer based ONLY on provided documents
 - If insufficient data, say so clearly
 """
-
