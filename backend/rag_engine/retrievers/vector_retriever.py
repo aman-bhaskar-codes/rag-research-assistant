@@ -1,19 +1,18 @@
-from typing import List, Dict, Any
+from typing import Dict, List
 from .base import BaseRetriever
 
 
 class VectorRetriever(BaseRetriever):
     """
     Core Intelligence Layer: Vector Retrieval Engine.
-    Responsibilities: Embed query, call DB search, return structured chunks.
-    No raw SQL allowed here.
+    Responsibilities: Embed query, call DB search, return structured chunks + meta.
     """
     
     def __init__(self, embedder, db_client):
         self.embedder = embedder
         self.db_client = db_client
 
-    async def retrieve(self, query: str, top_k: int = 5, domain: str = "ai_ml") -> List[Dict[str, Any]]:
+    async def retrieve(self, query: str, top_k: int = 5, domain: str = "ai_ml") -> Dict:
         # Step 1: Embed query
         # Support both async and sync embedders seamlessly
         if hasattr(self.embedder, "embed_query"):
@@ -22,7 +21,10 @@ class VectorRetriever(BaseRetriever):
             # Fallback to standard embed_text if using OllamaEmbedder / GeminiEmbedder
             query_embedding = self.embedder.embed_text(query)
 
-        # Step 2: Search DB
+        if not query_embedding:
+            raise ValueError("Query embedding failed")
+
+        # Step 2: DB vector search
         results = await self.db_client.vector_search(
             embedding=query_embedding,
             top_k=top_k,
@@ -30,12 +32,19 @@ class VectorRetriever(BaseRetriever):
         )
 
         # Step 3: Format output
-        formatted = []
+        chunks = []
         for r in results:
-            formatted.append({
+            chunks.append({
                 "content": r["content"],
                 "score": float(r["score"]),
                 "metadata": r.get("metadata", {})
             })
 
-        return formatted
+        return {
+            "chunks": chunks,
+            "meta": {
+                "strategy": "vector",
+                "top_k": top_k,
+                "domain": domain
+            }
+        }

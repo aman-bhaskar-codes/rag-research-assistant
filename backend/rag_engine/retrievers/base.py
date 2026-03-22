@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Dict
 
 
 class BaseRetriever(ABC):
@@ -9,7 +9,7 @@ class BaseRetriever(ABC):
     """
     
     @abstractmethod
-    async def retrieve(self, query: str, top_k: int = 5, domain: str = "ai_ml") -> List[Dict[str, Any]]:
+    async def retrieve(self, query: str, top_k: int, domain: str) -> Dict:
         """
         Retrieve chunks relevant to the query.
         
@@ -19,6 +19,19 @@ class BaseRetriever(ABC):
             domain: The domain filter (e.g., 'ai_ml').
             
         Returns:
-            A list of structured dictionary results.
+            Dict containing semantic chunks and strategy metadata:
+            {
+                "chunks": [
+                    {
+                        "content": "...",
+                        "score": 0.89,
+                        "metadata": {"source": "..."}
+                    }
+                ],
+                "meta": {
+                    "strategy": "vector",
+                    "top_k": 5
+                }
+            }
         """
         pass
