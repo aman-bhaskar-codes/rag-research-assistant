@@ -12,3 +12,17 @@ ON messages USING GIN (metadata);
 
 CREATE INDEX idx_messages_pagination
 ON messages(conversation_id, id DESC);
+
+-- document lookup
+CREATE INDEX idx_documents_domain
+ON documents(domain);
+
+-- chunk lookup
+CREATE INDEX idx_chunks_document
+ON document_chunks(document_id);
+
+-- 🔥 VECTOR INDEX (CORE OF RAG)
+CREATE INDEX idx_chunks_embedding
+ON document_chunks
+USING ivfflat (embedding vector_cosine_ops)
+WITH (lists = 100);
