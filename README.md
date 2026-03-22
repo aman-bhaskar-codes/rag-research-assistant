@@ -21,7 +21,7 @@
 
 Most AI tutorials end at a simple OpenAI API wrapper. We built a **Production-Grade RAG Orchestration Engine** designed to scale. 
 
-**The goal:** Create an AI system that doesn't just pass text to a model, but actually *reasons* about how to retrieve information. By decoupling the Frontend, the API Gateway, the RAG Retrieval Engine, and the Memory layers, we created a system capable of acting like a true AI researcher. If you ask a coding question, it switches to exact-match keyword search (BM25). If you ask an architectural question, it switches to semantic vector search (`pgvector`) combined with Hypothetical Document Embeddings (HyDE).
+**The goal:** Create an AI system that doesn't just pass text to a model, but actually *reasons* about how to retrieve information. By decoupling the Frontend, the API Gateway, the RAG Retrieval Engine, and the Memory layers, we created a modular system capable of acting like a true AI researcher.
 
 ---
 
@@ -99,111 +99,128 @@ graph TD
 
 ## 🌐 **Frontend Architecture & Engineering**
 
-The frontend is not merely a chat interface. It is an **adaptive intelligence control panel** built on an edge-native stack designed to parse continuous bytecode streams in real-time.
+The frontend is an **adaptive intelligence control panel** built on an edge-native stack designed to parse continuous bytecode streams in real-time.
 
-### 1. `Next.js 14` (App Router)
-We utilized Next.js Server Components for initial payload delivery, but strictly offloaded the intensive streaming logic to Client Components. The App router allows us to keep routing clean while bridging environment variables (like API URLs) securely to the client.
+### 🏗️ 1. Component Layer (UI)
+All UI is built using **modular, reusable components**, grouped by responsibility:
+* `chat/` → messaging system and token streaming rendering.
+* `sidebar/` → navigation and history.
+* `settings/` → system control panel.
+* `modals/` → floating UI layers.
+* `debug/` → **RAG transparency overlay**. Displays the raw document chunks retrieved, mathematical similarity scores, and Vector DB latency, proving system intelligence visually.
+* `profile/` → user interaction layer.
 
-### 2. `Zustand` over Redux
-Standard state managers like Redux trigger massive re-render cycles that destroy UI performance during high-speed LLM streaming. **Zustand** gives us atomic, isolated store slices. When a message chunk arrives, Zustand cleanly updates the `partialMessage` buffer without causing unrelated components (like the sidebar or settings modal) to re-render.
+### ⚡ 2. The Streaming Engine & State Layer (`Zustand` & `fetch`)
+* **`Zustand` over Redux**: Standard state managers trigger massive re-render cycles that destroy UI performance during high-speed LLM streaming. **Zustand** gives us atomic, isolated store slices. When a message chunk arrives, Zustand cleanly updates the `partialMessage` buffer without re-rendering the sidebar or modals.
+* **Server-Sent Events (SSE)**: We consume the FastAPI backend stream using the native browser `ReadableStream`. We use a while-loop (`await reader.read()`) to catch byte chunks as they are emitted from the backend, parsing JSON payloads instantly.
+* **Error Boundary & Crash Protection**: We engineered a graceful error boundary inside our `stream.ts` utility. If FastAPI throws a `422 Unprocessable Entity` due to malformed payloads, the React application terminates the stream locally and gracefully types out the explicit backend error into the Chat Bubble instead of crashing the app.
 
-### 3. Server-Sent Events (SSE) & The `fetch` API
-Real-time typing isn't magic; it's streaming byte chunks. We consume the FastAPI backend stream using the native browser `ReadableStream`.
-*   **How it works**: The user sends a POST request. The server doesn't close the connection; it holds it open via `text/event-stream`.
-*   We use a while-loop (`await reader.read()`) to catch byte chunks as they are emitted from the backend.
-*   A custom string decoder parses the JSON payloads instantly and pushes them into the Zustand state.
-
-### 4. `react-markdown` & `rehype-highlight`
-LLMs output raw markdown. We pipe the dynamically updating text string through `react-markdown`, which renders formatting on the fly. We paired it with `rehype-highlight` so that when the RAG engine generates Python or JavaScript code blocks, they are automatically wrapped in syntax highlighting.
-
-### 5. `framer-motion` & `tailwind-css`
-The visual identity relies on **Tailwind CSS** for rapid glassmorphism and gradient layout utilities. We integrated **Framer Motion** for physics-based layout transitions. When a new message appears, it doesn't snap abruptly into existence; it smoothly animates into the DOM tree.
-
-### 6. The Domain "Mode" System (Core Innovation)
-Instead of hiding the RAG complexity, we expose it. When a user clicks "AI Research" or "Programming", the frontend injects a specific intent payload into the API request. 
-**This enables the frontend to act as the steering wheel for the backend:**
-1.  **AI/ML Mode**: Triggers the backend to use HyDE and Vector Search for deep academic synthesis.
-2.  **Programming Mode**: Tells the backend to switch entirely to BM25 exact-keyword matching to find variable names and syntax rules.
+### 🎨 3. UI/UX Libraries & NextJS
+* **`Next.js 14` (App Router)**: We utilized Next.js Server Components for initial payload delivery, but strictly offloaded the intensive streaming logic to Client Components. 
+* **`react-markdown` & `rehype-highlight`**: When the RAG engine generates Python or JavaScript code blocks, they are automatically wrapped in native syntax highlighting.
+* **`framer-motion` & `tailwind-css`**: Provides layout transitions. When a new message appears, it doesn't snap abruptly; it smoothly animates into the DOM tree.
 
 ---
 
 ## 🧠 **Backend Orchestration & Control Plane**
 
-The backend is not just an API wrapper; it is an **Asynchronous LLM Orchestration Engine**. It acts as the central nervous system, managing concurrency, evaluating user intent, and dynamically piping context through retrieval pipelines.
+The backend is an **Asynchronous LLM Orchestration Engine**. It acts as the central nervous system, managing concurrency and evaluating user intent.
 
-### 1. `FastAPI` + `Uvicorn` (The Async Foundation)
-Why not Django or Flask? Standard synchronous architectures block the main execution thread while waiting for the LLM to process data. 
-*   **FastAPI** is built on top of Starlette and the ASGI async standard.
-*   When a user query hits our server, the `Uvicorn` worker handles the connection asynchronously (`async def`). 
-*   This means the CPU can pause execution on the LLM network request, go serve 100 other users, and jump back the millisecond the LLM responds. This is how we achieve internet-scale concurrency.
+### ⚙️ 1. Core Responsibilities & Flow
+* **Intent & Domain Routing**: The frontend payload contains a "Domain Mode". The orchestrator inspects this mode and assigns a specific Retrieval Strategy. (e.g. `mode == "programming"` swaps out the conceptual Vector database retrieval client for the BM25 lexical keyword client to prioritize exact code matching).
+* **Context Aggregation**: The orchestrator fires off multiple internal tasks simultaneously (`asyncio.gather`) to fetch Short-Term Memory from Upstash Redis, and RAG Context from the memory layer.
+* **Streaming Response Engine**: We use Python Generators (`yield`) to stream data. As OpenAI/Ollama generates text token-by-token, we `yield` those exact string segments directly out of the HTTP connection (`StreamingResponse`), creating real-time typing without heavy WebSockets.
 
-### 2. `Pydantic v2` (The Core Validation Layer)
-AI payloads are notoriously messy. We utilize **Pydantic** to enforce strict type-safety across the system boundaries. 
-*   Before a query reaches the Orchestrator, Pydantic intercepts the JSON payload, verifies that the `session_id` is a valid UUID, guarantees that the `user_id` matches the correct database format, and throws a safe `422 Unprocessable Entity` error if any data is corrupted.
-
-### 3. Server-Sent Events (SSE) via `StreamingResponse`
-Our most complex engineering feat is the real-time interaction layer.
-*   We use Python **Generators** (`yield`) to stream data. 
-*   As the RAG engine processes the initial context, we `yield` the retrieved documents to the frontend instantly.
-*   Then, as the OpenAI/Ollama layer generates text token-by-token, we `yield` those exact string segments directly out of the HTTP connection, creating the famous "typing" effect without ever closing the socket.
+### 📦 2. Technical Stack Deep Dive
+* **`FastAPI` + `Uvicorn`**: Handles async web scale. The ASGI worker model allows the CPU to pause execution on an LLM network request, serve 100 other users, and jump back the millisecond the LLM responds without thread-blocking.
+* **`Pydantic v2` (Validation Layer)**: AI payloads are messy. Pydantic intercepts JSON payloads, verifies that `session_id` and `user_id` are valid UUIDs, and guarantees type-safety across system boundaries.
+* **`google-generativeai` & `ollama`**: Abstracted adapter clients to easily swap between local privacy-first models and powerful cloud frontier models.
 
 ---
 
 ## 🧮 **RAG Engine (Retrieval-Augmented Generation)**
 
-The RAG Engine is the true intelligence layer of the system. Native LLMs hallucinate; the RAG module mathematically guarantees factual accuracy by pulling context from structured knowledge vectors prior to generation.
+The RAG Engine provides high-quality context to the LLM. It is mathematically factual and fully decoupled from the API routes (`retrieval_client → rag_engine.retrieve()`).
 
-### 1. `sentence-transformers` & `FastEmbed`
-We parse PDFs and text documents and chunk them algorithmically (usually 300 to 500 tokens). We then use local embedding models to convert those English text chunks into high-dimensional numerical vectors (lists of 1536 float numbers). 
+### 📦 1. Core Components
 
-### 2. BM25 (Best Matching 25) Keyword Algorithms
-Vectors are great for *semantic meaning* (e.g., matching "puppy" to "dog"), but terrible for exact keyword overlap (matching a specific API variable like `getUserProfile()`). We implemented a pure **BM25 TF-IDF** algorithm, heavily backed by PostgreSQL's native full-text search (`tsvector`), to calculate term frequency.
+#### 🔹 Document Ingestion Pipeline
+Handles transformation of raw data into structured knowledge:
+* **Transformers**: PDF and text loaders.
+* **Cleaning Layer**: Removes references, citations, and noise.
+* **Recursive Chunking**: Domain-aware slicing (300 to 500 tokens).
+* **Embedding Generation**: Uses native local models or `sentence-transformers` (`FastEmbed`) to convert text chunks into high-dimensional numerical vectors (lists of 1536 float numbers).
+* **Storage**: Injects directly into PostgreSQL with `pgvector` indexing.
 
-### 3. Reciprocal Rank Fusion (RRF)
-When the user asks a question, we actually do two separate searches simultaneously: an Index Vector Search and a BM25 Keyword Search. 
-*   **The Problem:** Vector DBs return a cosine similarity score (0.0 to 1.0), and BM25 returns an arbitrarily massive integer score (like 42.5). You cannot compare them.
-*   **The Solution:** We run an **RRF algorithm**, which ignores the raw scores and entirely relies on the *Rank Position* of the chunk to fuse both lists mathematically into a single, high-fidelity ranking list.
+#### 🔹 Query Intelligence Layer
+Improves retrieval quality before searching:
+* **Query Rewriting** → makes sloppy user queries more specific.
+* **Multi-Query Generation** → explodes a single query into multiple hidden questions to explore multiple perspectives simultaneously.
+* **HyDE (Hypothetical Document Embeddings)** → asks the LLM to blindly generate a "fake" synthetic answer first. We then embed that synthetic answer into a vector and search the Vector Database using it, which astronomically increases semantic match precision based on expected answer structure.
 
-### 4. Cross-Encoder Reranking
-We take the top 20 chunks from the RRF output and run them through a much heavier Cross-Encoder LLM. The Cross-Encoder reads the original question and the chunk *simultaneously* and assigns a much more accurate relevance score, cutting the top 20 chunks down to the top 3 most pristine pieces of context.
+#### 🔹 Retrieval Strategies
+* **Vector Retrieval**: Captures semantic conceptual meaning using `pgvector`.
+* **Keyword Retrieval (BM25)**: Vectors are terrible at finding exact variable names or stack traces. We implemented a pure **BM25 TF-IDF** algorithm, backed by PostgreSQL's native `tsvector` full-text search, to capture exact matches.
+* **Hybrid Fusion (RRF)**: Vector DBs output cosine similarity (0.0 to 1.0), BM25 outputs massive ints (e.g., 42). You cannot compare them directly. We run a **Reciprocal Rank Fusion (RRF)** algorithm that relies purely on the *Rank Position* of chunks to fuse both lists mathematically into a single, high-fidelity ranking list.
 
-### 5. Hypothetical Document Embeddings (HyDE)
-If a user asks: *"What is zero-shot learning?"*
-The engine first asks the LLM to blindly guess the answer: *"Zero-shot learning is a machine learning paradigm where..."*
-We then take that *fake, generated answer*, embed it into a vector, and search the Vector Database using the fake answer instead of the question. This astronomically increases similarity matching precision.
+#### 🔹 Reranking Layer
+* Takes the top 20 chunks from the RRF output and runs them through a much heavier **Cross-Encoder LLM**. The Cross-Encoder reads the original question and the chunk *simultaneously* and assigns an ultra-accurate relevance score, cutting the Top-20 hits down to the Top-3 most pristine pieces of context.
+
+#### 🔹 Evaluation System
+Ensures retrieval quality is fundamentally measurable:
+* **Recall@K** metric scoring
+* Keyword-based ground truth matching
+* Dedicated Python evaluation scripts for benchmarking pipeline iteration.
+
+### 📤 2. Standardized Output Format
+```json
+{
+  "chunks": [
+    {
+      "content": "Zero-shot learning is a machine learning paradigm...",
+      "score": 0.92,
+      "metadata": {
+        "chunk_id": "8f3a3-bbc...",
+        "document_id": "99dd1-...",
+        "domain": "ai_ml"
+      }
+    }
+  ],
+  "meta": {
+    "strategy": "hybrid",
+    "top_k": 20,
+    "top_n": 5
+  }
+}
+```
 
 ---
 
 ## 💾 **Memory & Database Persistence Layer**
 
-To build continuous intelligence, an AI must remember what it has learned. We constructed a highly specialized persistence layer that spans across relational schema logic, fast-access caching, and high-dimensional vector memory.
+To build continuous intelligence, an AI must remember what it has learned. We constructed an elite persistence layer that spans across relational schema logic, fast-access caching, and high-dimensional memory.
 
-### 1. Neon PostgreSQL & Serverless Database Architecture
-Running a traditional PostgreSQL instance on AWS RDS costs $15 to $50 a month, even when completely idle. We entirely circumvented this by migrating to **Neon Serverless Postgres**.
-*   **Scale-to-Zero Architecture**: The Neon cluster goes completely to sleep when no users are executing queries, reducing database costs to effectively zero dollars during low-traffic phases.
-*   **Connection Pooling**: Since FastAPI spins up async workers rapidly, standard connection limits would crash the database. We utilize Neon's native transaction pooling to handle thousands of concurrent transactions gracefully.
+### 🧠 1. Multi-Level Memory Architecture
+* **Short-Term Memory (Volatile)**: Stored in Upstash Redis. When a user asks "What did you just say?", pulling from a heavy Postgres DB is too slow. The Redis cache holds a rapid FIFO queue of the fast-paced recent conversation.
+* **Long-Term Semantic Memory (Episodic)**: If a chat runs for hours, dumping it fully into the prompt window destroys the LLM context limit and skyrockets costs. Instead, we regularly summarize old chats, generate an embedding vector from the summary, and store it. When the user asks something they mentioned 3 weeks ago, the semantic search injects only that specific memory fragment into the prompt window.
+* **User Personalization Layer**: Tracks behaviors and signals over time via relational joins.
 
-### 2. The `pgvector` Extension (Vector Memory)
-Instead of paying for expensive third-party Vector Databases like Pinecone or Weaviate, we enabled the `pgvector` extension natively inside our Postgres instance.
-*   **The Power**: This allowed us to add an `embedding VECTOR(1536)` column straight into our standard relational tables!
-*   **The Math**: We execute `L2 Distance (<->)` and `Cosine Similarity (<=>)` operators natively inside our SQL queries, filtering semantic embeddings while simultaneously joining relational metadata (like `user_id` or `timestamp`) in a single query hop.
-
-### 3. Upstash Redis (The Vercel Edge Cache)
-Traditional Redis requires persistent TCP connections, which fail miserably in Serverless architectures like Cloud Run or Vercel Edge.
-*   We deployed **Upstash Redis**, which provides an HTTP REST API wrapper over a Redis instance.
-*   Our `MemoryClient` issues heavily concurrent `asyncio.gather` requests to the Upstash HTTP endpoints to instantly fetch the last 10 chat messages of the active session. This heavily reduces the load on our Postgres database.
+### 📦 2. Technical Stack Deep Dive
+* **Neon PostgreSQL (Serverless)**: Running a traditional Postgres RDS costs continuous baseline money. We migrated to Neon Serverless Postgres. The DB cluster scales to zero when idle, effectively costing $0 during development. 
+* **Connection Pooling**: Neon's native transaction pooling handles the massive concurrent async execution waves sent by FastAPI.
+* **The `pgvector` Extension**: Enabled natively inside Postgres, allowing us to add `embedding VECTOR(1536)` columns straight into standard relational tables to compute lightning fast `L2 Distance (<->)` queries.
+* **Upstash Redis**: Traditional Redis requires persistent TCP connections (which fail in Serverless Cloud Run environments). We deployed **Upstash**, which wraps Redis in a lightning-fast HTTP REST API.
 
 ---
 
-## 🚀 **Deployment & Optimization Strategy**
+## 🚀 **Deployment & Operation**
 
 We strictly follow: **"Build like production — run like a startup."**
 
 *   **Google Cloud Run**: We containerized the backend via Docker (`python:3.11-slim`) and push it to Google Cloud Run. By setting `--min-instances 0`, the FastAPI server entirely shuts down when no one is using it, costing $0.
-*   **Neon Postgres & Upstash**: Both are serverless cloud databases. They scale to zero automatically when inactive.
-*   **Avoiding Traps**: We specifically avoided deploying Cloud SQL or Vertex AI managed instances early on, saving hundreds of dollars a month in "always-on" VM overhead.
+*   **Decoupled Services**: The system strictly avoids deploying Cloud SQL or Vertex AI managed instances early on to save hundreds of dollars a month in "always-on" overhead.
 
-### Command Line Deployment:
+### Command Line Deployment Workflow:
 
 1. **Build the Production Container**:
 ```bash
