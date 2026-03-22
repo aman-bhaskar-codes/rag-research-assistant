@@ -1,192 +1,59 @@
-# 📄 RAG Engine (Retrieval System)
+# 🧮 RAG Engine (Retrieval-Augmented Generation)
 
-## 🧠 Overview
-
-The **RAG Engine** is the core knowledge system of this project.
-It is responsible for retrieving relevant information from a structured knowledge base and providing high-quality context to the LLM for response generation.
-
-Unlike basic RAG implementations, this system is designed as a **modular, research-grade retrieval engine** supporting multiple strategies, query intelligence, and evaluation.
+The RAG Engine is the true intelligence layer of the system. Native LLMs hallucinate; the RAG module mathematically guarantees factual accuracy by pulling context from structured knowledge vectors prior to generation.
 
 ---
 
-## 🎯 Objectives
+## 📦 Deep Dive: The RAG Tech Stack
 
-* Provide accurate and relevant context for LLM responses
-* Support multiple retrieval strategies (vector, keyword, hybrid)
-* Improve retrieval quality using query transformation and reranking
-* Remain fully independent of API/backend layers
-* Enable experimentation and scalability
+To build a research-grade RAG pipeline, we combined several highly specialized Python algorithms.
 
----
+### 1. `sentence-transformers` & `FastEmbed`
+We parse PDFs and text documents and chunk them algorithmically (usually 300 to 500 tokens). We then use local embedding models to convert those English text chunks into high-dimensional numerical vectors (lists of 1536 float numbers). 
 
-## 🏗️ Architecture
+### 2. BM25 (Best Matching 25) Keyword Algorithms
+Vectors are great for *semantic meaning* (e.g., matching "puppy" to "dog"), but terrible for exact keyword overlap (matching a specific API variable like `getUserProfile()`). We implemented a pure **BM25 TF-IDF** algorithm, heavily backed by PostgreSQL's native full-text search (`tsvector`), to calculate term frequency.
 
-```text
-User Query
-   ↓
-Query Transformation (rewrite, multi-query, HyDE)
-   ↓
-Multi Retrieval Layer
-   ├── Vector Retrieval (pgvector)
-   ├── Keyword Retrieval (PostgreSQL FTS)
-   └── Hybrid Fusion (RRF)
-   ↓
-Reranking (LLM-based)
-   ↓
-Top-N Context Chunks
-```
+### 3. Reciprocal Rank Fusion (RRF)
+When the user asks a question, we actually do two separate searches simultaneously: an Index Vector Search and a BM25 Keyword Search. 
+*   **The Problem:** Vector DBs return a cosine similarity score (0.0 to 1.0), and BM25 returns an arbitrarily massive integer score (like 42.5). You cannot compare them.
+*   **The Solution:** We run an **RRF algorithm**, which ignores the raw scores and entirely relies on the *Rank Position* of the chunk to fuse both lists mathematically into a single, high-fidelity ranking list.
+
+### 4. Cross-Encoder Reranking
+We then take the top 20 chunks from the RRF output, and run them through a much heavier Cross-Encoder LLM. The Cross-Encoder reads the original question and the chunk *simultaneously* and assigns a much more accurate relevance score, cutting the top 20 chunks down to the top 3 most pristine pieces of context.
 
 ---
 
-## 📦 Core Components
+## 🧠 Query Transform Intelligence Operations
 
-### 1. Document Ingestion Pipeline
+Before we even search the database, the Engine manipulates the user's prompt to increase retrieval surface area:
 
-Handles transformation of raw data into structured knowledge:
+### 1. Hypothetical Document Embeddings (HyDE)
+If a user asks: *"What is zero-shot learning?"*
+The engine first asks the LLM to blindly guess the answer: *"Zero-shot learning is a machine learning paradigm where..."*
+We then take that *fake, generated answer*, embed it into a vector, and search the Vector Database using the fake answer instead of the question. This astronomically increases similarity matching precision.
 
-* PDF and text loaders
-* Cleaning (remove references, citations, noise)
-* Recursive chunking (domain-aware)
-* Embedding generation (Ollama / Gemini)
-* Storage in PostgreSQL with pgvector
-
----
-
-### 2. Retrieval Strategies
-
-#### 🔹 Vector Retrieval
-
-* Uses embeddings + pgvector similarity search
-* Captures semantic meaning
-* Best for conceptual queries
-
-#### 🔹 Keyword Retrieval
-
-* Uses PostgreSQL full-text search (tsvector)
-* Captures exact matches and technical terms
-* Useful for code, definitions, precise queries
-
-#### 🔹 Hybrid Retrieval
-
-* Combines vector + keyword results
-* Uses **Reciprocal Rank Fusion (RRF)**
-* Provides best balance of recall and precision
+### 2. Query Expansion (Multi-Query)
+If the user asks: *"How to deploy Next.js with FastAPI?"*
+The engine uses an LLM to split this into 3 hidden queries:
+1. *"FastAPI server deployment mechanisms"*
+2. *"Next.js production build architectures"*
+3. *"Dockerizing Next.js and FastAPI together"*
+We run 3 parallel searches, vastly expanding the recall of our database hit.
 
 ---
 
-### 3. Query Intelligence Layer
+## 🧩 Architectural Decoupling
 
-Improves retrieval quality before searching:
-
-* **Query Rewriting** → makes queries more specific
-* **Multi-Query Generation** → explores multiple perspectives
-* **HyDE (Hypothetical Document Embeddings)** → generates synthetic answers for better semantic search
-
----
-
-### 4. Reranking Layer
-
-Refines retrieved results:
-
-* LLM-based relevance scoring
-* Converts Top-K results → Top-N high-quality chunks
-* Improves precision significantly
-
----
-
-### 5. Evaluation System
-
-Ensures retrieval quality is measurable:
-
-* **Recall@K** metric
-* Keyword-based ground truth matching
-* Evaluation scripts for benchmarking
-
----
-
-## ⚙️ Retrieval Pipeline
-
-The engine exposes a unified interface:
+The RAG Engine was built strictly decoupled from the FastAPI API routes. 
+We wrote an internal `RetrievalClient` that can be imported completely autonomously anywhere in the backend logic.
 
 ```python
-async def retrieve(query: str, strategy: str = "hybrid", top_k: int = 20, domain: str = "ai_ml"):
+results = await rag_engine.retrieve(
+    query="Explain NextJS streaming", 
+    strategy="hybrid", 
+    top_k=5
+)
 ```
 
-### Pipeline Flow:
-
-1. Query transformation
-2. Retrieval (vector / keyword / hybrid)
-3. Rank fusion (if hybrid)
-4. Reranking
-5. Return structured results
-
----
-
-## 📤 Output Format
-
-```json
-{
-  "chunks": [
-    {
-      "content": "...",
-      "score": 0.92,
-      "metadata": {
-        "chunk_id": "...",
-        "document_id": "...",
-        "domain": "ai_ml"
-      }
-    }
-  ],
-  "meta": {
-    "strategy": "hybrid",
-    "top_k": 20,
-    "top_n": 5
-  }
-}
-```
-
----
-
-## 🧠 Design Principles
-
-* **Modularity** → each component is swappable
-* **Separation of concerns** → no API or DB logic leakage
-* **Extensibility** → easy to add new retrievers or rerankers
-* **Performance-aware** → batching, limited queries, efficient search
-* **Evaluation-driven** → measurable retrieval quality
-
----
-
-## 🚀 Key Highlights
-
-* Multi-strategy retrieval (vector + keyword + hybrid)
-* Query intelligence (rewrite, multi-query, HyDE)
-* LLM-based reranking
-* Domain-aware design (AI/ML, programming, business)
-* Production-ready architecture
-
----
-
-## 🔮 Future Improvements
-
-* Vectorless retrieval (LLM-only reasoning)
-* Feedback-based learning loop
-* Advanced rerankers (cross-encoders)
-* Adaptive retrieval strategies per query
-* Caching and latency optimization
-
----
-
-## 🧩 Integration
-
-This module is **fully independent** and integrates with the backend via:
-
-```python
-retrieval_client → rag_engine.retrieve()
-```
-
-It does not depend on:
-
-* FastAPI
-* frontend
-* orchestration logic
+This strict architectural separation means if an AI Agent needs to independently search the database during a deep thought loop, it can access the exact same RAG pipeline without ever touching an HTTP request layer.

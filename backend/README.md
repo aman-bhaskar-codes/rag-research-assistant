@@ -1,297 +1,54 @@
----
+# 🧠 Backend Orchestration & Control Plane
 
-# 🧠 RAG Research Assistant — Backend & Orchestration Layer
-
-A **production-grade FastAPI backend** that orchestrates a modular AI system combining **RAG, memory, and multi-model LLMs** into a unified, streaming intelligence pipeline.
+The backend is not just an API wrapper; it is an **Asynchronous LLM Orchestration Engine**. It acts as the central nervous system, managing concurrency, evaluating user intent, and dynamically piping context through retrieval pipelines.
 
 ---
 
-# 🚀 Overview
+## 📦 Deep Dive: The Backend Tech Stack
 
-This backend is not just an API server.
+### 1. `FastAPI` + `Uvicorn` (The Async Foundation)
+Why not Django or Flask? Standard synchronous architectures block the main execution thread while waiting for the LLM to process data. 
+*   **FastAPI** is built on top of Starlette and the ASGI async standard.
+*   When a user query hits our server, the `Uvicorn` worker handles the connection asynchronously (`async def`). 
+*   This means the CPU can pause execution on the LLM network request, go serve 100 other users, and jump back the millisecond the LLM responds. This is how we achieve internet-scale concurrency.
 
-It is a:
+### 2. `Pydantic v2` (The Core Validation Layer)
+AI payloads are notoriously messy. We utilize **Pydantic** to enforce strict type-safety across the system boundaries. 
+*   Before a query reaches the Orchestrator, Pydantic intercepts the JSON payload, verifies that the `session_id` is a valid UUID, guarantees that the `user_id` matches the correct database format, and throws a safe `422 Unprocessable Entity` error if any data is corrupted.
 
-> 🔥 **Real-time AI orchestration engine**
-
-It coordinates:
-
-* retrieval (RAG)
-* memory (short + long term)
-* model selection (Ollama + Gemini)
-* response synthesis
-* streaming delivery
-
----
-
-# 🧩 Core Architecture
-
-```
-Client (Frontend)
-↓
-FastAPI (API Layer)
-↓
-Orchestrator (Execution Engine)
-↓
-Memory + RAG Engine + LLMs
-↓
-Streaming Response (SSE)
-```
+### 3. Server-Sent Events (SSE) via `StreamingResponse`
+Our most complex engineering feat is the real-time interaction layer.
+*   We use Python **Generators** (`yield`) to stream data. 
+*   As the RAG engine processes the initial context, we `yield` the retrieved documents to the frontend instantly.
+*   Then, as the OpenAI/Ollama layer generates text token-by-token, we `yield` those exact string segments directly out of the HTTP connection, creating the famous "typing" effect without ever closing the socket.
 
 ---
 
-# ⚙️ Key Responsibilities
+## ⚙️ The Orchestration Pipeline Explained
+
+When a `POST /query` request arrives, the backend executes the following Pipeline Strategy:
+
+### 1. Intent & Domain Routing
+The frontend payload contains a "Domain Mode". The orchestrator inspects this mode and assigns a specific **Retrieval Strategy**.
+*   If `mode == "programming"`, the Orchestrator swaps out the Vector database retrieval client for the BM25 lexical keyword client to prioritize exact code matching.
+
+### 2. Context Aggregation
+The orchestrator fires off multiple internal tasks simultaneously (`asyncio.gather`):
+1.  **Fetch Short-Term Memory**: Pinging the Upstash Redis cache for the last 5 messages in this session.
+2.  **Fetch RAG Context**: Passing the user query into the RAG Engine for document retrieval.
+
+### 3. LLM Synthesis Generation
+Once the Context and Memory arrays are resolved, the Orchestrator packages them into a massive System Prompt.
+We constructed an **Adapter Pattern** for our LLM layer:
+*   `OllamaAdapter`: Connects strictly to `localhost:11434` for secure, privacy-first local inference.
+*   `GeminiAdapter`: Connects to the Google Cloud REST endpoints via `google-generativeai` for massive reasoning workloads.
+
+The Orchestrator dictates which adapter is spun up based on the user's explicit preference.
 
 ---
 
-## 🧠 1. Orchestration Engine (Core Intelligence)
-
-The backend implements a structured pipeline:
-
-```
-Query
-→ Memory Context
-→ Domain Routing
-→ Retrieval (RAG)
-→ Prompt Synthesis
-→ LLM Generation
-→ Streaming Response
-→ Memory Persistence
-```
-
----
-
-## 🎯 2. Domain-Aware Routing
-
-The system dynamically adapts behavior based on user intent:
-
-| Mode        | Retrieval Strategy | Model Priority |
-| ----------- | ------------------ | -------------- |
-| AI Research | Vector             | Gemini         |
-| Programming | Keyword            | Ollama         |
-| Business    | Hybrid             | Gemini         |
-
----
-
-## 🔍 3. RAG Integration
-
-The backend integrates with a modular RAG engine supporting:
-
-* vector search (pgvector)
-* keyword search (BM25)
-* hybrid retrieval
-* vectorless reasoning (entity relationships)
-
----
-
-## 🧠 4. Memory Integration
-
-Connected to a full memory system:
-
-* short-term conversation context
-* long-term semantic memory
-* Redis caching for fast access
-* ranking + pruning strategies
-
----
-
-## ⚡ 5. Streaming Engine (SSE)
-
-Responses are streamed using **Server-Sent Events (SSE)**:
-
-```
-data: token_1
-
-data: token_2
-
-data: token_3
-```
-
-Enables:
-
-* real-time UX
-* low perceived latency
-* incremental rendering
-
----
-
-## 🧪 6. Debug & Transparency System
-
-Supports a debug mode exposing:
-
-* retrieved chunks
-* retrieval strategy
-* latency metrics
-* vectorless relationships
-
-> Turns the system into a **research-grade AI tool**
-
----
-
-# 🔗 API Endpoints
-
----
-
-## 🔹 POST `/query`
-
-Main inference endpoint.
-
-### Features:
-
-* streaming response (SSE)
-* mode-aware execution
-* RAG integration
-* debug support
-
----
-
-### Request:
-
-```json
-{
-  "query": "Explain RAG",
-  "mode": "ai_research",
-  "model": "auto",
-  "rag": {
-    "strategy": "hybrid",
-    "top_k": 5
-  },
-  "debug": true
-}
-```
-
----
-
-### Response:
-
-* streamed tokens
-* optional debug payload
-
----
-
-## 🔹 GET `/history`
-
-Returns conversation history.
-
----
-
-## 🔹 POST `/upload`
-
-Handles document ingestion into RAG pipeline.
-
----
-
-# 🧱 Architecture Design Principles
-
----
-
-## 🔥 1. Separation of Concerns
-
-* API layer → request/response only
-* Orchestrator → pipeline logic
-* RAG → retrieval only
-* Memory → persistence only
-
----
-
-## 🔌 2. Interface-Driven Design
-
-All integrations use clean contracts:
-
-* `MemoryClient`
-* `RetrievalClient`
-* `LLMService`
-
----
-
-## ⚙️ 3. Modular & Replaceable Components
-
-* swap LLM providers
-* change retrieval strategies
-* upgrade memory system
-
-Without breaking the system.
-
----
-
-## 🚀 4. Async & Streaming First
-
-* fully async FastAPI
-* token-level streaming
-* efficient I/O handling
-
----
-
-# 🛡️ Production Features
-
----
-
-## ✅ Error Handling
-
-* global exception handlers
-* fallback responses
-* safe failure modes
-
----
-
-## 📊 Logging & Observability
-
-* structured logging (JSON)
-* request tracing
-* latency tracking
-
----
-
-## 🚦 Rate Limiting
-
-* per-user request limits
-* abuse protection
-
----
-
-## 🔐 Validation & Security
-
-* strict request validation
-* payload limits
-* input sanitization
-
----
-
-# 🧠 Why This Backend is Different
-
-Unlike typical AI backends:
-
-* it is not a simple wrapper over an LLM
-* it is a **multi-system orchestrator**
-* it exposes internal reasoning (debug mode)
-* it supports multiple retrieval paradigms
-* it is designed for **real-world scale**
-
----
-
-# 🧪 Development Philosophy
-
-This backend was built with:
-
-* production-first mindset
-* modular system design
-* extensibility as a core principle
-* real-world deployment considerations
-
----
-
-# 🚀 Future Enhancements
-
-* multi-model cascade (small → large)
-* adaptive retrieval strategies
-* real-time pipeline visualization
-* advanced tracing (OpenTelemetry)
-* agent-based workflows
-
----
-
-# 💥 Final Thought
-
-> This backend is not just an API.
-
-It is the **control plane of an AI system**.
+## 🛡️ Production & Security Considerations
+
+To make this inherently production-ready for Google Cloud Run:
+*   **Dependency Injection**: FastAPI `Depends()` is used everywhere. Database connection pools, Redis clients, and RAG Engines are injected at runtime, making unit testing incredibly clean.
+*   **Stateless Containers**: The entire orchestration layer is totally stateless. All state lives purely in Neon Postgres or Upstash Redis. If Cloud Run kills our container, the next container spins up and resumes perfectly without losing data.

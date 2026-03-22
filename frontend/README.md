@@ -1,337 +1,62 @@
-# 🧠 Frontend Architecture & Engineering
+# 🌐 Frontend Architecture & Engineering
 
-The frontend of this system is designed as a **modular, mode-aware interface for interacting with AI systems**, rather than a simple chat UI.
-
-The goal was to build something that:
-
-* feels like ChatGPT / Perplexity
-* exposes system intelligence (RAG, memory, debug)
-* scales cleanly as features grow
-* remains fast, responsive, and intuitive
+The frontend is not merely a chat interface. It is an **adaptive intelligence control panel** built on an edge-native stack designed to parse continuous bytecode streams in real-time.
 
 ---
 
-# 🏗️ Architectural Philosophy
+## 📦 Deep Dive: The Frontend Tech Stack
 
-The frontend follows a **layered architecture**:
+We avoided bloated legacy frameworks and built the UI using the absolute bleeding-edge of React engineering:
 
-UI Components → State Layer → API Layer → Backend
+### 1. `Next.js 14` (App Router)
+We utilized Next.js Server Components for initial payload delivery, but strictly offloaded the intensive streaming logic to Client Components. The App router allows us to keep routing clean while bridging environment variables (like API URLs) securely to the client.
 
----
+### 2. `Zustand` over Redux
+Standard state managers like Redux trigger massive re-render cycles that destroy UI performance during high-speed LLM streaming. **Zustand** gives us atomic, isolated store slices. When a message chunk arrives, Zustand cleanly updates the `partialMessage` buffer without causing unrelated components (like the sidebar or settings modal) to re-render.
 
-## 1. Component Layer (UI)
+### 3. Server-Sent Events (SSE) & The `fetch` API
+Real-time typing isn't magic; it's streaming byte chunks. We consume the FastAPI backend stream using the native browser `ReadableStream`.
+*   **How it works**: The user sends a POST request. The server doesn't close the connection; it holds it open via `text/event-stream`.
+*   We use a while-loop (`await reader.read()`) to catch byte chunks as they are emitted from the backend.
+*   A custom string decoder parses the JSON payloads instantly and pushes them into the Zustand state.
 
-All UI is built using **modular, reusable components**, grouped by responsibility:
+### 4. `react-markdown` & `rehype-highlight`
+LLMs output raw markdown. We pipe the dynamically updating text string through `react-markdown`, which renders formatting on the fly. We paired it with `rehype-highlight` so that when the RAG engine generates Python or JavaScript code blocks, they are automatically wrapped in syntax highlighting.
 
-* `chat/` → messaging system
-* `sidebar/` → navigation and history
-* `settings/` → system control panel
-* `modals/` → floating UI layers
-* `debug/` → RAG transparency
-* `profile/` → user interaction layer
-
----
-
-### Key Design Decision:
-
-Components are kept **“dumb” (UI-focused)**
-while logic is handled in stores and features.
-
-This ensures:
-
-* reusability
-* maintainability
-* easier scaling
+### 5. `framer-motion` & `tailwind-css`
+The visual identity relies on **Tailwind CSS** for rapid glassmorphism and gradient layout utilities. We integrated **Framer Motion** for physics-based layout transitions. When a new message appears, it doesn't snap abruptly into existence; it smoothly animates into the DOM tree.
 
 ---
 
-## 2. Feature Layer (Business Logic)
+## 🏗️ The Domain "Mode" System (Core Innovation)
 
-The `features/` directory encapsulates **domain-level logic**, including:
+The frontend's primary architectural innovation is its **Domain Mode Engine**. 
 
-* chat handling
-* history management
-* mode system (core innovation)
-* document handling
+Instead of hiding the RAG complexity, we expose it. When a user clicks "AI Research" or "Programming", the frontend injects a specific intent payload into the API request. 
 
----
+**This enables the frontend to act as the steering wheel for the backend:**
+1.  **AI/ML Mode**: Triggers the backend to use HyDE and Vector Search for deep academic synthesis.
+2.  **Programming Mode**: Tells the backend to switch entirely to BM25 exact-keyword matching to find variable names and syntax rules.
 
-### 🔥 Mode System (Core Innovation)
-
-The frontend introduces a **mode-based interaction system**:
-
-* AI / ML Research (active)
-* Programming (coming soon)
-* Business (coming soon)
-
-Each mode is designed to influence:
-
-* backend prompt behavior
-* retrieval strategy (RAG)
-* UI hints and rendering style
+This fundamentally transforms the app from a generic chatbot into a **highly specialized research application**.
 
 ---
 
-### Why this matters:
+## 🐞 The RAG Debug & Transparency UI
 
-Instead of a generic chatbot, the UI becomes:
+A critical requirement for enterprise AI is transparency. We built a visual **Debug Panel** component. 
 
-> an **adaptive intelligence interface**
+When a user enables "Debug Mode", the UI intercepts specialized metrics payloads attached to the SSE stream. It explicitly displays:
+*   The raw document chunks that were successfully retrieved by the backend.
+*   The mathematical similarity scores of those chunks.
+*   The microsecond latencies of the Vector Database.
 
----
-
-## 3. State Management (Zustand)
-
-We use Zustand for **lightweight, scalable state management**.
-
----
-
-### State Separation:
-
-#### Client State (Zustand)
-
-Handles:
-
-* messages
-* streaming state
-* UI modals
-* settings
-* mode selection
+This layer proves the intelligence of the system visually to the user.
 
 ---
 
-#### Server State (React Query)
+## ⚡ Error Boundary & Crash Protection
 
-Handles:
+During e2e testing, we encountered the Next.js "Red Screen of Death" when the FastAPI backend rejected malformed payloads. 
 
-* chat history
-* documents
-* backend data
-
----
-
-### Why this split?
-
-* avoids over-fetching
-* keeps UI responsive
-* enables caching and retries
-
----
-
-## 4. Streaming System (Core Engine)
-
-One of the most critical parts of the frontend.
-
----
-
-### Design:
-
-* Uses `fetch` + ReadableStream
-* processes chunks incrementally
-* safely handles partial JSON
-* updates UI token-by-token
-
----
-
-### Key Benefits:
-
-* real-time response feel
-* no UI blocking
-* smooth typing experience
-
----
-
-### Implementation Detail:
-
-We separate:
-
-* `partialMessage` → live streaming content
-* `messages` → finalized responses
-
-This avoids flickering and improves UX stability.
-
----
-
-## 5. API Integration Layer
-
-A centralized API layer handles communication with backend:
-
-* POST `/chat` → streaming
-* POST `/upload` → document ingestion
-* GET `/history` → session retrieval
-
----
-
-### Request Structure:
-
-Each query sends:
-
-* query text
-* mode (currently fixed to `ai_research`)
-* model selection
-* RAG configuration
-
----
-
-This allows the frontend to act as a **control surface for backend intelligence**.
-
----
-
-## 6. RAG-Aware UI
-
-The frontend is designed to **expose retrieval behavior**, not hide it.
-
----
-
-### Features:
-
-* sources attached to responses
-* expandable source panels
-* debug mode for chunk visibility
-
----
-
-### Debug Mode:
-
-When enabled, the UI shows:
-
-* retrieved chunks
-* retrieval strategy
-* latency
-
----
-
-This transforms the app into a **research tool**, not just a chatbot.
-
----
-
-## 7. Settings System (Control Layer)
-
-The settings system acts as a **real-time control panel for AI behavior**.
-
----
-
-### Controls:
-
-* model selection
-* RAG strategy (vector, hybrid, etc.)
-* top_k tuning
-* reranking toggle
-* memory toggle
-
----
-
-### Key Design Decision:
-
-Settings are stored globally and **injected into every request**.
-
-This ensures:
-
-* consistent behavior
-* reproducibility
-* experimentation capability
-
----
-
-## 8. Modal System (UX Architecture)
-
-Instead of static panels, the UI uses a **modal-driven architecture**:
-
-* settings modal
-* memory modal
-* upgrade modal
-* command palette
-
----
-
-### Benefits:
-
-* cleaner layout
-* better focus
-* scalable UI system
-
----
-
-## 9. Command Palette (⌘K)
-
-Inspired by modern developer tools:
-
-* quick navigation
-* keyboard-first interaction
-* power-user experience
-
----
-
-This significantly improves usability for advanced users.
-
----
-
-## 10. Animation & Experience Layer
-
-Animations are implemented using **Framer Motion**.
-
----
-
-### Principles:
-
-* subtle, not distracting
-* functional, not decorative
-* performance-first
-
----
-
-### Includes:
-
-* message transitions
-* modal animations
-* dropdown interactions
-* mode switching
-
----
-
-## 11. UI/UX Philosophy
-
-The interface is designed with:
-
-* **clarity over clutter**
-* **speed over complexity**
-* **transparency over abstraction**
-
----
-
-### Visual Identity:
-
-* dark research theme
-* gradient depth
-* glassmorphism elements
-* minimal but expressive UI
-
----
-
-## 12. Production Considerations
-
-The frontend is built with production in mind:
-
-* modular structure
-* scalable state management
-* backend-agnostic design
-* error handling and retries
-* performance optimization
-
----
-
-# 🚀 Summary
-
-This frontend is not just a UI layer.
-
-It is:
-
-> a **control interface for an AI system**, designed to expose, adapt, and enhance intelligent behavior.
-
----
-
-# 💥 Final Insight
-
-Most AI apps hide complexity.
-
-This system embraces it — and makes it usable.
+We engineered a **graceful error boundary** inside our `stream.ts` utility. If FastAPI throws a `422 Unprocessable Entity` or `500 Internal Error`, the React application catches the raw HTTP status, terminates the stream locally, and gracefully types out the explicit backend error directly into the user's Chat Bubble. The application never crashes.
