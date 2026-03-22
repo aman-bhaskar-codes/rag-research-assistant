@@ -1,0 +1,20 @@
+In this article, I will introduce one of the foundation search algorithms called Breadth-first search (BFS).
+Definition
+The search algorithm is an algorithm to retrieve information stored within some data structure, or calculated in the search space of a problem domain [1]. Breadth-first search is an algorithm for traversing or searching tree or graph data structures. It starts at the root node and explores all nodes at the present depth before moving on to the nodes at the next depth level [2]. In other words, it expands the shallowest unexpanded node which can be implemented by a First-In-First-Out (FIFO) queue. Let’s go through an example with the following GRAPH:
+From the above step by step expansion diagram, we can see that the BFS algorithm prioritizes edges closest to the starting vertex to perform a search.
+Now, let’s evaluate this algorithm: Denote d as the depth of the least-cost solution and b as the maximum branching factor of the search tree or graph. Assume a hypothetical state space where every node can be expanded into b new nodes, solution of path-length d:
+-
+Time Complexity: How long does it take to find a solution? 1 + b + b² + b³ + …. + bᵈ = O(bᵈ)
+-
+Space Complexity: Maximum number of nodes in memory Keeps every node in memory = O(bᵈ)
+-
+Completeness: Does it always find a solution if one exists? Yes
+-
+Optimality: Does it always find the best (least-cost) solution? Yes, when all steps cost equally.
+Code Implementation
+Let’s use the above example to implement the BFS algorithm using Python.
+The diagram is a schematic representation of the graph with vertices V={A, B, C, D, E, F, G, H, I, J, K, L, M}, E={{A, B}, {A, C}, {B, D}, {B, E}, {C, F}, {C, G}, {D, H}, {D, I}, {E, J}, {E, K}, {F, L}, {F, M}}
+-
+Creating the function that takes in edges of the GRAPH which outputs the adjacency list for undirected graph
+-
+Creating the function that takes in the adjacency list and starting vertex which output the sequence of BFS search

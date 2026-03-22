@@ -1,0 +1,14 @@
+**Introducing SPEED-Bench: A Unified and Diverse Benchmark for Speculative Decoding** 3 days ago • 35
+The First Healthcare Robotics Dataset and Foundational Physical AI Models for Healthcare Robotics 6 days ago • 21
+Beyond Semantic Similarity: Introducing NVIDIA NeMo Retriever’s Generalizable Agentic Retrieval Pipeline 9 days ago • 34
+Expanding the Alpamayo Open Platform for Developing Reasoning AVs Across Models, Data, and Simulation 6 days ago • 16
+Nemotron-Personas: Improve AI Training With the First Synthetic Personas Dataset Aligned to Real-World Distributions Jun 10, 2025 • 25
+We're open-sourcing "The Amazing Hand", a fully 3D printed robotic hand for less than $200 ✌️✌️✌️ Jul 8, 2025 • 50
+How I Trained Action Chunking Transformer (ACT) on SO-101: My Journey, Gotchas, and Lessons Sep 30, 2025 • 61
+**Introducing SPEED-Bench: A Unified and Diverse Benchmark for Speculative Decoding** 3 days ago • 35
+The First Healthcare Robotics Dataset and Foundational Physical AI Models for Healthcare Robotics 6 days ago • 21
+Beyond Semantic Similarity: Introducing NVIDIA NeMo Retriever’s Generalizable Agentic Retrieval Pipeline 9 days ago • 34
+Expanding the Alpamayo Open Platform for Developing Reasoning AVs Across Models, Data, and Simulation 6 days ago • 16
+Nemotron-Personas: Improve AI Training With the First Synthetic Personas Dataset Aligned to Real-World Distributions Jun 10, 2025 • 25
+We're open-sourcing "The Amazing Hand", a fully 3D printed robotic hand for less than $200 ✌️✌️✌️ Jul 8, 2025 • 50
+How I Trained Action Chunking Transformer (ACT) on SO-101: My Journey, Gotchas, and Lessons Sep 30, 2025 • 61
