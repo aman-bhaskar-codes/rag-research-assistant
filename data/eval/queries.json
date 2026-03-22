@@ -1,0 +1,14 @@
+[
+  {
+    "query": "What is transformer architecture?",
+    "expected_keywords": ["attention", "encoder", "decoder"]
+  },
+  {
+    "query": "How does backpropagation work?",
+    "expected_keywords": ["gradient", "loss", "weights"]
+  },
+  {
+    "query": "What is self-attention mechanism?",
+    "expected_keywords": ["attention", "query", "key", "value"]
+  }
+]
