@@ -1,22 +1,49 @@
-# Use an official Python runtime as a parent image
-FROM python:3.13-slim
+# ──────────────────────────────────────────────────────────────────────────────
+# RAG Research Assistant — Backend (Cloud Run Optimized)
+# ──────────────────────────────────────────────────────────────────────────────
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# 1. Base image — slim for fast cold starts, 3.11 for production stability
+FROM python:3.11-slim
 
-# Set the working directory
+# 2. Prevent .pyc files and ensure real-time log output
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# 3. Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 4. Install system dependencies
+#    - build-essential: needed for compiling native extensions (numpy, scikit-learn)
+#    - libpq-dev: required by asyncpg for PostgreSQL connections
+#    - curl: health check probes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the rest of the backend code
+# 5. Copy dependency file FIRST (Docker layer caching)
+COPY backend/requirements.txt .
+
+# 6. Install Python dependencies (no cache = smaller image)
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir python-multipart
+
+# 7. Create non-root user (Cloud Run security best practice)
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+# 8. Copy backend application code
 COPY backend/ .
 
-# Expose port 8000
-EXPOSE 8000
+# 9. Switch to non-root user
+USER appuser
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 10. Expose port (Cloud Run injects PORT env var, default 8080)
+EXPOSE 8080
+
+# 11. Health check (Cloud Run uses HTTP probes, but this helps local testing)
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+# 12. Start server — respects Cloud Run's PORT injection
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

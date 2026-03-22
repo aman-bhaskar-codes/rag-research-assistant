@@ -1,22 +1,51 @@
-__pycache__
+# ── Python artifacts ──
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env
-venv
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
+
+# ── Virtual environments ──
+env/
+venv/
+.venv/
+
+# ── Environment / Secrets ──
+.env
+.env.*
+
+# ── Version control ──
+.git/
+.gitignore
+
+# ── Frontend (not needed in backend image) ──
+frontend/
+node_modules/
+
+# ── Tests & Docs (not needed in production) ──
+tests/
+docs/
+*.md
+
+# ── IDE & OS ──
+.vscode/
+.idea/
+.DS_Store
+
+# ── CI/CD & Infra (not needed in image) ──
+infra/
+.github/
+docker-compose.yml
+
+# ── Coverage & Testing artifacts ──
+.tox/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
+.cache/
+.pytest_cache/
+.hypothesis/
 coverage.xml
-*,cover
-.hypothesis
-.pytest_cache
-.env
-.git
-.gitignore
+nosetests.xml
+
+# ── Logs ──
+*.log
