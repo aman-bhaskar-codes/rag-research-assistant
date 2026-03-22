@@ -9,3 +9,13 @@ wheels/
 # Virtual environments
 .venv
 .env
+.env.*
+!.env.example
+
+# OS / Cache Files
+.DS_Store
+.next/
+node_modules/
+*.log
+__pycache__/
+.pytest_cache/
