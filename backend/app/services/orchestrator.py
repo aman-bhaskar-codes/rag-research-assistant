@@ -1,4 +1,9 @@
 import json
+import time
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
@@ -21,13 +26,20 @@ class Orchestrator:
         return {"strategy": "hybrid", "model": "auto"}
 
     async def stream(self, request):
-
-        # 1. CONTEXT
-        history = await self.memory.get_recent_messages(
-            request.user_id,
-            request.session_id,
-            limit=20
-        )
+        latency_breakdown = {}
+        
+        # 1. CONTEXT (With Fallback)
+        t0 = time.perf_counter()
+        try:
+            history = await self.memory.get_recent_messages(
+                request.user_id,
+                request.session_id,
+                limit=20
+            )
+        except Exception as e:
+            logger.error(f"Memory history failure: {e}")
+            history = []
+        latency_breakdown["history_retrieval"] = (time.perf_counter() - t0) * 1000
 
         rewritten_query = request.query
 
@@ -36,33 +48,51 @@ class Orchestrator:
         model = request.model if request.model != "auto" else routing["model"]
         strategy = routing["strategy"]
 
-        # 2. SEMANTIC MEMORY (NEW)
-        memory_context = await self.memory.get_relevant_memory(
-            request.user_id,
-            rewritten_query
-        )
+        # 2. SEMANTIC MEMORY (With Fallback)
+        t1 = time.perf_counter()
+        try:
+            memory_context = await self.memory.get_relevant_memory(
+                request.user_id,
+                rewritten_query
+            )
+        except Exception as e:
+            logger.error(f"Semantic memory failure: {e}")
+            memory_context = []
+        latency_breakdown["semantic_memory"] = (time.perf_counter() - t1) * 1000
 
-        user_context = await self.memory.get_user_context(request.user_id)
+        t2 = time.perf_counter()
+        try:
+            user_context = await self.memory.get_user_context(request.user_id)
+        except Exception as e:
+            logger.error(f"User profile context failure: {e}")
+            user_context = None
+        latency_breakdown["user_profile"] = (time.perf_counter() - t2) * 1000
 
-        rag_result = await self.retrieval.retrieve(
-            query=rewritten_query,
-            strategy=strategy,
-            top_k=request.rag.top_k,
-            domain=request.mode   # 🔥 Critical mapping: mode determines search domain
-        )
+        # 3. RAG RETRIEVAL (With Fallback)
+        t3 = time.perf_counter()
+        try:
+            rag_result = await self.retrieval.retrieve(
+                query=rewritten_query,
+                strategy=strategy,
+                top_k=request.rag.top_k,
+                domain=request.mode   # 🔥 Critical mapping: mode determines search domain
+            )
+            chunks = rag_result.get("chunks", [])
+        except Exception as e:
+            logger.error(f"RAG retrieval failure: {e}")
+            chunks = []
+            rag_result = {"meta": {}}
+        latency_breakdown["rag_retrieval"] = (time.perf_counter() - t3) * 1000
 
-        chunks = rag_result.get("chunks", [])
-
-        if not chunks:
-            yield "No relevant documents found."
-            return
+        if not chunks and not memory_context:
+            logger.warning("No context found (Docs or Memory). Proceeding with general knowledge.")
 
         debug_info = {
             "strategy": strategy,
             "model": model,
             "chunks_used": len(chunks),
             "memory_hits": len(memory_context),
-            "latency": rag_result.get("meta", {})
+            "latency": latency_breakdown
         }
 
         prompt = self.build_prompt(
@@ -76,15 +106,19 @@ class Orchestrator:
 
         # 🔥 accumulate response
         full_response = ""
-
-        async for token in self.llm.stream(prompt, model=model):
-            full_response += token
-            yield token
+        # 4. LLM GENERATION
+        try:
+            async for token in self.llm.stream(prompt, model=model):
+                full_response += token
+                yield token
+        except Exception as e:
+            logger.error(f"LLM streaming failure: {e}")
+            yield "[ERROR] Disconnection from intelligence layer. Contact support."
+            return
 
         # DEBUG
         if request.debug:
-            yield "\n\n--- DEBUG INFO ---\n"
-            yield json.dumps(debug_info, indent=2)
+            yield f"\n\n--- ELITE TELEMETRY ---\n{json.dumps(debug_info, indent=2)}"
 
             # The following block is typically part of a semantic hook within the memory service
             # and is included here for illustrative purposes as per the instruction.
@@ -99,12 +133,14 @@ class Orchestrator:
             #     importance_score=0.8 if "important" in request.query.lower() else 0.5
             # )
 
-        # 🔥 SAVE RESPONSE (Triggers Semantic Hook)
-        await self.memory.save_interaction(
-            request.user_id,
-            request.session_id,
-            request.query,
-            full_response
+        # 6. ASYNC PERSISTENCE (Non-blocking)
+        asyncio.create_task(
+            self.memory.save_interaction(
+                request.user_id,
+                request.session_id,
+                request.query,
+                full_response
+            )
         )
 
     def build_prompt(self, query, history, memory_context, user_context, chunks, mode):
@@ -115,11 +151,11 @@ class Orchestrator:
             [f"{msg['role']}: {msg['content']}" for msg in history]
         )
 
-        memory_text = "\n".join(memory_context)
-        chunk_text = "\n".join([c["content"] for c in chunks])
+        memory_text = "\n".join(memory_context) if memory_context else "None"
+        chunk_text = "\n".join([c["content"] for c in chunks]) if chunks else "None"
 
         # 🔥 Memory Boost: If we have strong memories, emphasize them
-        memory_boost = "IMPORTANT: Prioritize the 'User Memory' and 'User Profile' below as they contain specific user preferences and past corrections." if memory_context else ""
+        memory_boost = "IMPORTANT: Prioritize the 'User Memory' and 'User Profile' for specific technical preferences." if memory_context else ""
 
         return f"""
 You are an expert AI Research Assistant specialized in {mode}.
@@ -129,7 +165,7 @@ You are an expert AI Research Assistant specialized in {mode}.
 {user_context if user_context else "No established behavioral traits yet."}
 
 ### 🧠 USER MEMORY (RELEVANT PAST CONTEXT)
-{memory_text if memory_text else "No directly relevant past interactions found."}
+{memory_text}
 
 ### 📚 EXTERNAL KNOWLEDGE (RESEARCH DOCUMENTS)
 {chunk_text}
@@ -141,8 +177,7 @@ You are an expert AI Research Assistant specialized in {mode}.
 User Query: {query}
 
 Instructions:
-1. Use 'EXTERNAL KNOWLEDGE' for general technical facts.
-2. Use 'USER MEMORY' and 'USER PROFILE' to adapt the tone, detail level, and specific preferences (e.g., tool choices).
-3. If the user asks about something you've discussed before (see Memory), acknowledge it.
-4. If information is missing from all sources, provide a helpful synthesis based on your internal knowledge but mark it as 'General AI Knowledge'.
+1. Synthesize all knowledge sources.
+2. If RAG documents are missing, rely on internal expertise but note it.
+3. Be professional and objective.
 """
