@@ -61,6 +61,17 @@ The core intelligence retrieval mechanism is completely decoupled and implements
 
 ---
 
+## 📚 **Modular Architecture Documentation**
+
+The system's advanced complexity is fully documented across its respective microservices. Dive into the engine rooms here:
+
+* 🌐 **[Frontend Architecture](./frontend/README.md)**: Component isolation, Zustand server/client state management, mode-aware interfaces, and SSE streaming mechanisms.
+* 🧠 **[Backend Orchestration](./backend/README.md)**: FastAPI gateway, domain routing, pipeline execution, and the interface-driven LLM orchestration layer.
+* 🧮 **[RAG Engine Layer](./backend/rag_engine/README.md)**: Vector + BM25 hybrid retrieval pipelines, Query Intelligence (HyDE), and Reciprocal Rank Fusion logic.
+* 💾 **[Memory & Database Layer](./backend/memory/README.md)**: Upstash Redis caching strategies, Neon pgvector storage mechanisms, and semantic long-term memory pruning.
+
+---
+
 ## 🧪 **Domain Modes**
 
 The Assistant dynamically shifts its system prompt, retrieval strategy, and chunking mechanism based on the selected domain:
@@ -94,42 +105,84 @@ Finally, we hardened the backend. We crafted a multi-stage `Dockerfile` running 
 
 ---
 
-## 💻 **Local Development & Deployment Guide**
+## ⚙️ **Infrastructure & Deployment (The Engine Room)**
 
-### 1. Environment Setup
-Clone the repository and copy the example environment files.
-```bash
-cp backend/infra/env/backend.env.example backend/.env
-cp frontend/infra/env/frontend.env.example frontend/.env.local
+This repository follows a strict **lean production strategy**: 
+> *Build like production — run like a startup (minimal cost).*
+
+Our core principles: Use **serverless where possible**, avoid always-on infrastructure, keep services **loosely coupled**, and optimize for **cold start + cost efficiency**.
+
+### 🏗️ Architecture Overview
+
+```text
+       Frontend (Next.js)
+              ↓
+  Cloud Run (FastAPI Backend)
+              ↓
+-----------------------------------
+| Neon (Postgres + pgvector)      |
+| Upstash Redis (Serverless Cache)|
+| Multi-Model LLM Layer           |
+-----------------------------------
 ```
 
-You will need to provide your own:
-- **Neon Postgres Connection URL:** `postgresql+asyncpg://...`
-- **Upstash Redis URL & Token**
-- **Gemini API Key** (Or run Ollama locally on `11434`)
+### 📦 Core Components
 
-### 2. Database Initialization
-Run the raw SQL architecture scripts against your Neon Database to establish the Knowledge Graph tables:
-```bash
-psql $DATABASE_URL -f backend/memory/db/setup.sql
-psql $DATABASE_URL -f backend/memory/db/setup_adaptive.sql
-psql $DATABASE_URL -f backend/memory/db/setup_semantic.sql
-```
+**1. Backend Deployment (Cloud Run)**
+The FastAPI backend is containerized and deployed using **Google Cloud Run**. It scales to zero, offers a free tier, and autoscales based on traffic.
+* *Key Config:* Memory: `512Mi`, CPU: `1`, Min instances: `0`, Max instances: `2`.
 
-### 3. Spin Up The Infrastructure
-Everything is containerized for exact parity with Google Cloud Run.
+**2. Containerization (Docker)**
+Located in `infra/docker/backend/`. Features a lightweight image (`python:3.11-slim`), optimized build caching, and a production-ready ASGI server compatible with Cloud Run's dynamic port injection.
+
+**3. Database (Neon Serverless Postgres)**
+We use Neon instead of Cloud SQL to eliminate always-on costs. It supports `pgvector` for embeddings, scales automatically, and is ideal for early-stage RAG systems.
+
+**4. Cache Layer (Upstash Redis)**
+Serverless, HTTP-based Redis caching that is incredibly Cloud Run friendly. We cache retrieval results, embeddings, and response layers to reduce LLM latency and API costs.
+
+**5. Authentication (Auth0 + Google Login)**
+Auth0 handles identity. The infrastructure provides secure secret handling via `infra/env/`, the backend validates strict JWTs, and the frontend manages elegant login/logout flows.
+
+---
+
+## 🚀 **Deployment Workflow**
+
+1. **Build & Tag image for Artifact Registry:**
 ```bash
-# Start the Backend (Port 8080)
 docker build -t rag-backend -f infra/docker/backend/Dockerfile .
-docker run -d -p 8080:8080 --env-file .env rag-backend
-
-# Start the Frontend (Port 3000)
-cd frontend
-npm install
-npm run dev
+docker tag rag-backend asia-south1-docker.pkg.dev/PROJECT_ID/rag-backend-repo/rag-backend:latest
+docker push asia-south1-docker.pkg.dev/PROJECT_ID/rag-backend-repo/rag-backend:latest
 ```
 
-Visit `http://localhost:3000` to interact with your elite intelligence system.
+2. **Deploy to Cloud Run (Scale-to-Zero):**
+```bash
+gcloud run deploy rag-backend \
+  --image asia-south1-docker.pkg.dev/PROJECT_ID/rag-backend-repo/rag-backend:latest \
+  --region asia-south1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --memory 512Mi \
+  --cpu 1 \
+  --max-instances 2 \
+  --min-instances 0 \
+  --port 8080
+```
+
+3. **Inject Secrets into Cloud Run:**
+```bash
+gcloud run services update rag-backend \
+  --update-env-vars DATABASE_URL=...,REDIS_URL=...,GEMINI_API_KEY=...
+```
+
+---
+
+## 💰 **Cost & Performance Optimization Strategy**
+
+- **Free-Tier Usage:** Cloud Run (scale to zero), Neon (Serverless DB), Upstash (Free Redis tier).
+- **Avoided Traps:** Absolutely no Cloud SQL (always billed), no always-on VMs, no GPU workloads.
+- **Async-First Design:** Optimized for Cloud Run concurrency with non-blocking DB calls and SSE streaming.
+- **Query Optimization:** Top-K reduced (5 → rerank → 3), chunk sizes strictly clamped (300-500 tokens).
 
 ---
 
