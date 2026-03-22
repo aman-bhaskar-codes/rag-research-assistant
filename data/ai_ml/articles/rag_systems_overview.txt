@@ -1,0 +1,17 @@
+Retrieval-Augmented Generation: Engineering Production RAG Systems
+
+Retrieval-Augmented Generation (RAG) represents a paradigm shift in how we build AI systems that need to work with large, dynamic knowledge bases. Rather than relying solely on the parametric knowledge stored in a language model's weights during pre-training, RAG combines the generative capabilities of LLMs with real-time information retrieval from external data sources.
+
+The fundamental architecture of a RAG system consists of three core components: the Ingestion Pipeline, the Retrieval Engine, and the Generation Module.
+
+The Ingestion Pipeline is responsible for processing raw documents into a searchable format. This involves several stages: document loading (parsing PDFs, HTML, markdown, etc.), text cleaning (removing noise, normalizing formatting), chunking (splitting documents into semantically coherent segments), embedding (converting text chunks into dense vector representations), and indexing (storing vectors in a searchable index like FAISS, Pinecone, or Weaviate).
+
+Chunking strategy is arguably the most critical decision in RAG system design. Chunks that are too small lose context and produce noisy retrievals. Chunks that are too large dilute the relevant information and waste context window budget. The optimal chunk size depends on the domain, document structure, and downstream task. For technical documentation, chunks of 800-1500 characters with 100-200 character overlap tend to work well. Recursive character splitting, which attempts to split on paragraph boundaries first, then sentences, then words, preserves semantic coherence better than naive fixed-size splitting.
+
+The Retrieval Engine performs similarity search to find the most relevant chunks for a given query. Vector similarity search using embeddings is the most common approach, but hybrid retrieval combining dense vectors with sparse keyword matching (like BM25) often produces superior results. Re-ranking models can further improve retrieval quality by scoring the relevance of retrieved chunks using cross-encoder models.
+
+The Generation Module takes the retrieved chunks and the original query, constructs a prompt, and generates a response using an LLM. Prompt engineering is crucial here: the prompt must clearly distinguish between the system instructions, the retrieved context, and the user query. Including source attribution in the generated output helps users verify the information and builds trust.
+
+Advanced RAG techniques include query transformation (decomposing complex queries into sub-queries), iterative retrieval (using initial results to refine the search), knowledge graph integration (combining vector search with structured knowledge), and agentic RAG (using AI agents to orchestrate multi-step retrieval and reasoning).
+
+Production RAG systems must also handle several operational concerns: monitoring retrieval quality, managing embedding model versioning, handling document updates and deletions, implementing access control, and optimizing latency and cost.

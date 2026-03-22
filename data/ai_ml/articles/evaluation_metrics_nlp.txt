@@ -1,0 +1,23 @@
+Evaluation Metrics for NLP and RAG Systems: A Comprehensive Guide
+
+Evaluating the quality of NLP systems and RAG pipelines requires a diverse set of metrics that capture different aspects of performance. Understanding these metrics is essential for iterating on system design and comparing different approaches.
+
+BLEU (Bilingual Evaluation Understudy) measures the overlap of n-grams between generated text and reference translations. Originally designed for machine translation evaluation, BLEU computes precision for n-grams of different sizes (typically 1 through 4) and combines them with a brevity penalty to discourage overly short translations. While still widely used, BLEU has known limitations: it does not account for semantic similarity, synonyms, or paraphrases, and it correlates poorly with human judgments for open-ended generation tasks.
+
+ROUGE (Recall-Oriented Understudy for Gisting Evaluation) focuses on recall rather than precision. ROUGE-N measures the overlap of n-grams between the generated text and reference summaries. ROUGE-L measures the longest common subsequence. ROUGE is commonly used for evaluating summarization systems.
+
+BERTScore uses contextual embeddings from BERT to compute similarity between tokens in the generated and reference texts. It aligns tokens using greedy matching based on cosine similarity and reports precision, recall, and F1 scores. BERTScore correlates better with human judgments than n-gram based metrics because it captures semantic similarity.
+
+For RAG-specific evaluation, several specialized metrics have been developed. Retrieval metrics measure how well the system finds relevant documents. Hit Rate measures whether any of the retrieved documents contain the answer. Mean Reciprocal Rank (MRR) considers the rank of the first relevant document. Normalized Discounted Cumulative Gain (NDCG) accounts for the relevance grade and position of all retrieved documents.
+
+Faithfulness measures whether the generated answer is supported by the retrieved context. This is critical for RAG systems because the model may hallucinate information not present in the retrieved documents. Faithfulness is typically evaluated by decomposing the answer into atomic claims and verifying each claim against the context.
+
+Answer Relevance measures how well the generated answer addresses the original question. A system might retrieve relevant documents and generate a faithful response that nonetheless does not answer what was asked.
+
+Context Relevance evaluates whether the retrieved chunks are actually relevant to the query. Low context relevance indicates problems in the retrieval pipeline: either the embeddings do not capture the semantic relationship, or the chunking strategy is too coarse.
+
+LLM-as-Judge is an increasingly popular evaluation approach where another LLM is used to evaluate the quality of generated outputs. The judge model is prompted with the question, the generated answer, and optionally a reference answer, and asked to provide a quality rating. While not a replacement for human evaluation, LLM judges provide scalable, consistent evaluation that correlates reasonably well with human preferences.
+
+Human Evaluation remains the gold standard for assessing generation quality. Common approaches include side-by-side comparison (showing evaluators outputs from different systems and asking which is better), Likert scale rating (rating individual outputs on dimensions like helpfulness, accuracy, and fluency), and error annotation (identifying and categorizing specific errors in the output).
+
+End-to-end evaluation for RAG systems should combine retrieval metrics with generation quality metrics. A system might have excellent retrieval but poor generation (e.g., the model ignores the retrieved context), or vice versa. Tracking both separately helps identify bottlenecks and guide optimization efforts.

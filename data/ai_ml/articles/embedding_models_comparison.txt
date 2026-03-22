@@ -1,0 +1,23 @@
+Embedding Models: Architecture, Training, and Selection Guide
+
+Embedding models convert text into dense vector representations that capture semantic meaning, enabling similarity search, clustering, and classification tasks. Understanding the landscape of embedding models is crucial for building effective RAG systems and other AI applications.
+
+Word2Vec, introduced by Mikolov et al. in 2013, was one of the first widely successful embedding approaches. It learns word-level embeddings using either the Skip-gram model (predicting context words from a center word) or the CBOW model (predicting a center word from context words). While revolutionary at the time, word-level embeddings cannot capture the meaning of phrases or handle polysemy (words with multiple meanings).
+
+Sentence-BERT (SBERT), introduced in 2019, adapted the BERT architecture for generating sentence-level embeddings. By adding a pooling layer on top of BERT and training with a siamese network structure on sentence pairs, SBERT can produce semantically meaningful sentence embeddings in a single forward pass. This made it practical to use embeddings for large-scale similarity search, unlike vanilla BERT which requires encoding pairs of sentences together.
+
+The E5 family of models (Embeddings from Bidirectional Encoder Representations) uses a contrastive learning approach with carefully curated training data. E5 models achieve strong performance across diverse tasks by training on a mixture of labeled and synthetic data. The instruction-tuned variant, E5-Instruct, accepts a task description as part of the input, allowing a single model to generate task-specific embeddings.
+
+OpenAI's text-embedding-ada-002 and its successor text-embedding-3 models are widely used commercial embedding models. They provide a good balance of quality and convenience, with the newer models offering adjustable output dimensions (matryoshka representations) that allow trading off between embedding quality and storage/compute requirements.
+
+Google's Gemini embedding models, accessible through the Gemini API, provide high-quality embeddings optimized for retrieval tasks. The models support different task types (retrieval_document, retrieval_query, semantic_similarity, classification) that optimize the embedding for specific use cases.
+
+Cohere's Embed v3 focuses on multilingual embeddings and supports compression to binary or int8 representations, dramatically reducing storage requirements while maintaining search quality.
+
+BGE (BAAI General Embedding) models are open-source alternatives that achieve competitive performance with commercial offerings. The BGE family includes models of various sizes and specialized variants for specific domains.
+
+Key factors for choosing an embedding model include: the quality of embeddings for your specific domain and task, the dimensionality of the output vectors (higher dimensions capture more information but require more storage and compute), inference speed (important for real-time applications), cost (for commercial APIs), and language support.
+
+For RAG systems specifically, it is important to use the same embedding model for both document indexing and query embedding. Mixing models will produce incompatible vector spaces and degraded retrieval quality. Some models provide separate modes for encoding documents versus queries, which can improve retrieval by optimizing the embedding for each side of the similarity computation.
+
+Matryoshka Representation Learning (MRL) is a recent technique where models are trained to produce embeddings where the first N dimensions are a valid embedding of lower quality. This allows dynamically choosing the embedding dimension at inference time, trading off between quality and efficiency without retraining the model.

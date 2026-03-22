@@ -3,7 +3,7 @@ import os
 from .base import BaseEmbedder
 
 class GeminiEmbedder(BaseEmbedder):
-    def __init__(self, model_name: str = "models/text-embedding-004"):
+    def __init__(self, model_name: str = "models/gemini-embedding-001"):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")

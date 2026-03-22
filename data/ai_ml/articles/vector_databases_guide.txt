@@ -1,0 +1,29 @@
+Vector Databases: Architecture and Engineering for AI Applications
+
+Vector databases have become a critical infrastructure component for modern AI applications, particularly for similarity search, recommendation systems, and Retrieval-Augmented Generation (RAG). Understanding their architecture and trade-offs is essential for building performant AI systems.
+
+A vector database is specialized for storing, indexing, and querying high-dimensional vector embeddings. Unlike traditional databases that excel at exact match queries on structured data, vector databases are optimized for approximate nearest neighbor (ANN) search in high-dimensional spaces. This is fundamentally different from traditional database operations because the dimensionality curse makes exact nearest neighbor search computationally infeasible for high-dimensional vectors.
+
+The core indexing algorithms used by vector databases include:
+
+Flat Index (Brute Force): Compares the query vector against every stored vector. Provides exact results but has O(n) time complexity, making it impractical for large datasets. Useful as a baseline for measuring the recall of approximate methods.
+
+Inverted File Index (IVF): Partitions the vector space into clusters using k-means clustering. During search, only the vectors in the nearest clusters are compared. This reduces the search space significantly but may miss relevant vectors that fall in neighboring clusters. Using a larger nprobe parameter (number of clusters to search) improves recall at the cost of speed.
+
+Hierarchical Navigable Small World (HNSW): Builds a multi-layer graph where each node is connected to its nearest neighbors. Search starts at the top layer and progressively moves to lower, denser layers. HNSW provides excellent query performance with high recall and is the default index type in many vector databases.
+
+Product Quantization (PQ): Compresses vectors by splitting them into sub-vectors and quantizing each sub-vector independently. This dramatically reduces memory usage (often 10-100x compression) with a modest loss in recall. PQ is often combined with IVF for large-scale deployments.
+
+Major vector database solutions include:
+
+FAISS (Facebook AI Similarity Search): An open-source library that provides efficient implementations of various ANN algorithms. FAISS is highly optimized for GPU acceleration and is often used as the indexing engine within other systems. It is not a full database but rather a similarity search library.
+
+Pinecone: A fully managed vector database service that handles scaling, replication, and infrastructure management. It provides a simple API for upserting and querying vectors with metadata filtering.
+
+Weaviate: An open-source vector database that supports hybrid search (combining vector and keyword search), GraphQL-based queries, and module-based extensibility for different embedding models and integrations.
+
+Qdrant: A high-performance open-source vector database written in Rust, offering advanced filtering, payload management, and distributed deployment options.
+
+pgvector: A PostgreSQL extension that adds vector similarity search capabilities to existing PostgreSQL databases. This is particularly useful when you want to keep vectors alongside relational data without introducing a separate database system.
+
+When choosing a vector database, key considerations include: query latency requirements, dataset size, memory constraints, filtering capabilities, operational complexity, and integration with your existing infrastructure.

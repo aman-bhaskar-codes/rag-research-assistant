@@ -2,6 +2,10 @@ import sys
 import os
 import numpy as np
 import faiss
+from dotenv import load_dotenv
+
+# Load environment variables (.env)
+load_dotenv()
 
 # Add backend directory to module search path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../backend")))

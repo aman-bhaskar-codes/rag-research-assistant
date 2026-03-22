@@ -1,0 +1,17 @@
+The Transformer Architecture: A Deep Dive
+
+The Transformer architecture was introduced in the landmark paper "Attention Is All You Need" by Vaswani et al. in 2017. It fundamentally changed how we approach sequence modeling tasks in natural language processing and beyond.
+
+Before Transformers, the dominant paradigm for sequence modeling was based on Recurrent Neural Networks (RNNs) and their variants like Long Short-Term Memory (LSTM) networks and Gated Recurrent Units (GRUs). These models processed sequences one token at a time, maintaining a hidden state that was updated at each step. This sequential nature created two major problems: it prevented parallelization during training, making it slow on modern GPU hardware, and it made it difficult to capture long-range dependencies due to the vanishing gradient problem.
+
+The key innovation of the Transformer is the Self-Attention Mechanism. Instead of processing tokens sequentially, self-attention allows the model to look at all positions in the input sequence simultaneously when computing the representation of each position. This is done through three learned projections: Query (Q), Key (K), and Value (V). The attention score between any two positions is computed as the dot product of their query and key vectors, scaled by the square root of the dimension, and then passed through a softmax function to obtain weights. These weights are used to compute a weighted sum of the value vectors.
+
+Multi-Head Attention extends this idea by running multiple attention operations in parallel, each with different learned projections. This allows the model to attend to information from different representation subspaces at different positions. The outputs of all attention heads are concatenated and linearly projected to produce the final output.
+
+The Transformer architecture consists of an encoder stack and a decoder stack. The encoder processes the input sequence and produces a set of continuous representations. Each encoder layer contains two sub-layers: a multi-head self-attention mechanism and a position-wise fully connected feed-forward network. Layer normalization and residual connections are applied around each sub-layer.
+
+The decoder generates the output sequence one token at a time. Each decoder layer contains three sub-layers: a masked multi-head self-attention mechanism (to prevent attending to future positions), a multi-head attention mechanism that attends to the encoder output, and a position-wise feed-forward network.
+
+Since Transformers process all positions simultaneously, they have no inherent notion of sequence order. Positional encodings are added to the input embeddings to provide information about the position of each token in the sequence. The original paper used sinusoidal functions of different frequencies, though learned positional embeddings have also been successfully used.
+
+The impact of Transformers has been enormous. They led directly to the development of BERT (Bidirectional Encoder Representations from Transformers), GPT (Generative Pre-trained Transformer), T5 (Text-to-Text Transfer Transformer), and many other models that have achieved state-of-the-art results across virtually all NLP benchmarks.

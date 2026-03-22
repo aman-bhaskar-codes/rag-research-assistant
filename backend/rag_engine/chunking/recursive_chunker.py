@@ -64,7 +64,12 @@ class RecursiveCharacterChunker(BaseChunker):
                 current_count += item_len
 
             if current_buffer:
-                final_chunks.append("".join(current_buffer))
+                chunk_str = "".join(current_buffer)
+                # If the last chunk is too small, absorb it into the previous chunk 
+                if final_chunks and len(chunk_str) < self.chunk_overlap:
+                    final_chunks[-1] = final_chunks[-1] + chunk_str
+                else:
+                    final_chunks.append(chunk_str)
 
             return final_chunks
 

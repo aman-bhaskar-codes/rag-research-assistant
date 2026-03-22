@@ -1,0 +1,23 @@
+Neural Network Optimization: From Gradient Descent to Modern Techniques
+
+Optimization lies at the heart of deep learning. The process of training a neural network is fundamentally an optimization problem: finding the set of parameters (weights and biases) that minimize a loss function measuring the discrepancy between the model's predictions and the ground truth.
+
+Stochastic Gradient Descent (SGD) is the foundational optimization algorithm. Instead of computing the gradient over the entire dataset (batch gradient descent), SGD computes the gradient on a randomly sampled mini-batch. This introduces noise into the gradient estimates but enables training on large datasets and often helps escape local minima. The update rule is simple: parameters are updated by subtracting the product of the learning rate and the gradient.
+
+Momentum adds a velocity term to SGD that accumulates past gradients, helping the optimizer build up speed in consistent gradient directions and dampen oscillations in inconsistent directions. This is analogous to a ball rolling down a hill: it accelerates in the downhill direction and is less affected by small bumps.
+
+Adam (Adaptive Moment Estimation) combines momentum with adaptive learning rates for each parameter. It maintains exponentially decaying averages of both the gradient (first moment) and the squared gradient (second moment), and uses these to adapt the learning rate for each parameter. Adam is the default optimizer for many deep learning applications due to its robustness and minimal hyperparameter tuning requirements.
+
+Learning Rate Scheduling adjusts the learning rate during training. Common schedules include step decay (reducing the learning rate by a factor at fixed intervals), cosine annealing (following a cosine curve from a high to low learning rate), warmup (linearly increasing the learning rate from zero over the first few training steps), and one-cycle policy (increasing then decreasing the learning rate over training).
+
+Weight Decay (L2 regularization) adds a penalty proportional to the squared magnitude of the weights to the loss function. This encourages the model to learn smaller, more distributed weight values, which generally improves generalization.
+
+Batch Normalization normalizes the activations of each layer to have zero mean and unit variance, then applies a learned scale and shift. This stabilizes training, allows higher learning rates, and provides some regularization effect. Layer Normalization is a variant that normalizes across features rather than across the batch, making it more suitable for sequence models and variable-length inputs.
+
+Gradient Clipping prevents exploding gradients by capping the gradient norm at a maximum value. This is essential for training recurrent networks and large Transformers, where gradients can grow exponentially through deep computational graphs.
+
+Dropout randomly sets a fraction of activations to zero during training, forcing the network to learn redundant representations. This is one of the most effective regularization techniques and is widely used in practice.
+
+Mixed Precision Training uses half-precision (FP16) arithmetic for forward and backward passes while maintaining a master copy of weights in full precision (FP32). This reduces memory usage by approximately 2x and speeds up training on modern GPUs that have dedicated FP16 compute units.
+
+Gradient Accumulation simulates larger batch sizes by accumulating gradients over multiple forward-backward passes before performing a parameter update. This is useful when the desired batch size exceeds GPU memory capacity.

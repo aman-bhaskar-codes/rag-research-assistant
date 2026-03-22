@@ -1,0 +1,17 @@
+Large Language Model Training: From Pre-training to RLHF
+
+Training a Large Language Model (LLM) is a multi-stage process that requires careful engineering, massive computational resources, and sophisticated optimization techniques. Understanding this process is essential for anyone working with or building AI systems.
+
+Pre-training is the foundation of LLM development. During pre-training, the model learns general language understanding by processing vast amounts of text data. For decoder-only models like GPT, the training objective is next-token prediction: given a sequence of tokens, predict the next token. For encoder-only models like BERT, the objectives include masked language modeling (predicting randomly masked tokens) and next sentence prediction. The scale of pre-training is staggering: modern LLMs are trained on trillions of tokens using thousands of GPUs for weeks or months.
+
+The training data quality significantly impacts model performance. Data curation involves collecting text from diverse sources (web pages, books, code repositories, scientific papers), deduplicating the data, filtering out low-quality or harmful content, and balancing the representation of different domains and languages. The Common Crawl dataset, which contains petabytes of web text, is a primary data source, but it requires extensive cleaning and filtering.
+
+Tokenization converts raw text into a sequence of integer tokens that the model can process. Modern LLMs typically use subword tokenization algorithms like Byte-Pair Encoding (BPE) or SentencePiece. These algorithms learn a vocabulary of common subword units from the training data, balancing vocabulary size with the ability to represent any text without out-of-vocabulary tokens.
+
+The Transformer architecture serves as the backbone of modern LLMs. Key architectural choices include the number of layers (depth), the hidden dimension (width), the number of attention heads, the feed-forward network dimension, and the context length. Scaling laws, discovered by researchers at OpenAI and DeepMind, provide guidelines for how to allocate a fixed compute budget across model size and training data to achieve optimal performance.
+
+Distributed training is necessary for models that are too large to fit on a single GPU. Techniques include data parallelism (splitting training batches across GPUs), tensor parallelism (splitting individual layers across GPUs), pipeline parallelism (splitting the model across GPUs by layers), and expert parallelism (for Mixture-of-Experts models). Frameworks like DeepSpeed, Megatron-LM, and FSDP (Fully Sharded Data Parallelism) implement these strategies.
+
+After pre-training, models undergo supervised fine-tuning (SFT) on high-quality instruction-following datasets. These datasets contain examples of prompts paired with ideal responses, curated by human annotators. SFT teaches the model to follow instructions, maintain appropriate tone, and produce helpful outputs.
+
+Reinforcement Learning from Human Feedback (RLHF) further aligns the model with human preferences. First, a reward model is trained on human comparisons of model outputs. Then, the language model is optimized using Proximal Policy Optimization (PPO) to maximize the reward model's scores while staying close to the SFT model using a KL divergence penalty. Recent alternatives like Direct Preference Optimization (DPO) simplify this process by directly optimizing the language model on preference data without a separate reward model.
