@@ -26,7 +26,14 @@ export async function streamChat(
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `HTTP error! status: ${res.status}`);
+      let errorMessage = errorData.error?.message || `HTTP error! status: ${res.status}`;
+      
+      // Handle FastAPI standard validation errors (422)
+      if (errorData.detail && Array.isArray(errorData.detail)) {
+        errorMessage = `Validation Error: ${errorData.detail.map((e: any) => `${e.loc.join('.')}: ${e.msg}`).join(', ')}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     if (!res.body) throw new Error("No response body");

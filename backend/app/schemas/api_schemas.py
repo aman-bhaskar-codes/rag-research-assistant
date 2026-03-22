@@ -12,7 +12,7 @@ class ResearchRequest(BaseModel):
     user_id: str = Field(..., description="UUID of the researcher")
     session_id: str = Field(..., description="UUID of the chat session")
     mode: Literal["ai_research", "programming", "business"] = Field(default="ai_research")
-    model: Literal["auto", "gemini-1.5-pro", "ollama"] = Field(default="auto")
+    model: str = Field(default="auto")
     debug: bool = Field(default=False)
     rag: RAGConfig = Field(default_factory=RAGConfig)
 

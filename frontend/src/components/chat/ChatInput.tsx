@@ -22,7 +22,7 @@ export default function ChatInput() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const user_id = settings.user_id || "default_user"; // Ensure we have a user_id
+    const user_id = settings.user_id || "00000000-0000-0000-0000-000000000000"; // Ensure standard UUID
     const session_id = useChatStore.getState().selectedChatId || uuidv4();
 
     const userMessage = {
