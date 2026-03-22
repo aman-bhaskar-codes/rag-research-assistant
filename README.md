@@ -31,9 +31,11 @@ We have engineered a system that doesn't just read documents; it dynamically rou
 
 <div align="center">
 
-> *(Insert High-Resolution Architecture Diagrams Here)*
-> 
-> *The blueprint maps our data flow from the NextJS Edge -> FastAPI WebSockets -> Hybrid RAG Lab -> Memory Lake -> LLM Layer.*
+![System Architecture](./docs/architecture-1.png)
+
+![System Design](./docs/architecture-2.png)
+
+*The blueprint maps our data flow from the NextJS Edge -> FastAPI WebSockets -> Hybrid RAG Lab -> Memory Lake -> LLM Layer.*
 
 </div>
 
