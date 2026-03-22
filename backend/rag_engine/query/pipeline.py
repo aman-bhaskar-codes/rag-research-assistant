@@ -12,21 +12,38 @@ class QueryPipeline:
         self.multi_query = multi_query
         self.hyde = hyde
 
-    async def run(self, query: str) -> List[str]:
-        # Generate varied signals
-        rewritten = await self.rewriter.transform(query)
-        multi = await self.multi_query.transform(query)
-        hyde_q = await self.hyde.transform(query)
-
-        # Merge, deduplicate (set comprehension), and bounds check (~5 output queries expected typically)
-        # Using a set to enforce uniqueness
-        final_queries: Set[str] = set()
+    async def run(self, query: str, max_queries: int = 5) -> List[str]:
+        """
+        Processes a user query into a controlled list of semantic search signals.
+        """
+        # 1. Start with the original query in case LLMs fail or hallucinate
+        final_queries: Set[str] = {query}
         
-        # Keep original query just in case the LLM ruined the meaning
-        final_queries.add(query)
-        
-        for q in (rewritten + multi + hyde_q):
-            if q and len(q) > 5:  # Basic validation
-                final_queries.add(q)
+        # 2. Add expanded signals with safe fallbacks
+        try:
+            rewritten = await self.rewriter.transform(query)
+            for q in rewritten:
+                if len(final_queries) < max_queries:
+                    final_queries.add(q)
+        except Exception as e:
+            # Non-blocking: If rewriter fails, we just lose that specific expansion
+            pass
 
-        return list(final_queries)
+        try:
+            multi = await self.multi_query.transform(query)
+            for q in multi:
+                if len(final_queries) < max_queries:
+                    final_queries.add(q)
+        except Exception as e:
+            pass
+
+        try:
+            hyde_q = await self.hyde.transform(query)
+            for q in hyde_q:
+                if len(final_queries) < max_queries:
+                    final_queries.add(q)
+        except Exception as e:
+            pass
+
+        # Use list comprehension for final filtering (len check)
+        return [q for q in list(final_queries) if len(q) > 5]

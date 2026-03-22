@@ -1,6 +1,11 @@
-import google.generativeai as genai
 import os
+import logging
+from typing import List
+import google.generativeai as genai
 from .base import BaseEmbedder
+
+logger = logging.getLogger(__name__)
+
 
 class GeminiEmbedder(BaseEmbedder):
     def __init__(self, model_name: str = "models/gemini-embedding-001"):

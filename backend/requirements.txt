@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+asyncpg
+redis
+ollama
+faiss-cpu
+numpy
+scikit-learn
+python-dotenv
+httpx

@@ -155,7 +155,10 @@ class DBClient:
             chunk_data = chunks[idx]
             results.append({
                 "content": chunk_data["text"],
-                "metadata": {"source": chunk_data.get("source_file", "unknown")},
+                "metadata": {
+                    "source_file": chunk_data.get("source_file", "unknown"),
+                    "chunk_index": chunk_data.get("chunk_index", "unknown")
+                },
                 "score": float(distances[0][i])
             })
             

@@ -3,6 +3,7 @@ from .base import BaseRetriever
 from .vector_retriever import VectorRetriever
 from .keyword_retriever import KeywordRetriever
 from rag_engine.fusion.rank_fusion import reciprocal_rank_fusion
+from rag_engine.utils.math import normalize_scores
 
 
 class HybridRetriever(BaseRetriever):
@@ -23,25 +24,18 @@ class HybridRetriever(BaseRetriever):
         vector_results = await self.vector_retriever.retrieve(query, top_k * 2, domain)
         keyword_results = await self.keyword_retriever.retrieve(query, top_k * 2, domain)
 
-        v_chunks = vector_results["chunks"]
-        k_chunks = keyword_results["chunks"]
+        # Normalize scores to ensure comparability
+        v_chunks = normalize_scores(vector_results["chunks"])
+        k_chunks = normalize_scores(keyword_results["chunks"])
 
         # Fuse rankings using Reciprocal Rank Fusion
         fused_ids = reciprocal_rank_fusion([v_chunks, k_chunks])
 
-        # Map IDs back to original chunks
-        # Use our safe `source_file::chunk_index` lookup key matching `rank_fusion.py`
+        # Map IDs back to original chunks using the standardized chunk_id
         all_chunks: Dict[str, Dict[str, Any]] = {}
         
         for c in v_chunks + k_chunks:
-            meta = c.get("metadata", {})
-            source = meta.get("source_file", "unknown")
-            idx = meta.get("chunk_index", "unknown")
-            if source != "unknown" and idx != "unknown":
-                cid = f"{source}::{idx}"
-            else:
-                cid = c["content"]
-                
+            cid = c["metadata"].get("chunk_id", c["content"])
             all_chunks[cid] = c
 
         # Extract the highest quality finalized chunks up to `top_k`

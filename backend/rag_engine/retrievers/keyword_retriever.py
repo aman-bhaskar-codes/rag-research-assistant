@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from .base import BaseRetriever
 
 
@@ -20,10 +20,18 @@ class KeywordRetriever(BaseRetriever):
 
         chunks = []
         for r in results:
+            metadata = r.get("metadata", {})
+            chunk_id = metadata.get("chunk_id") or f"{metadata.get('source_file')}_{metadata.get('chunk_index')}"
+            
             chunks.append({
                 "content": r["content"],
                 "score": float(r["score"]),
-                "metadata": r.get("metadata", {})
+                "metadata": {
+                    "chunk_id": chunk_id,
+                    "document_id": metadata.get("source_file"),
+                    "domain": domain,
+                    **metadata
+                }
             })
 
         return {

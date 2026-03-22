@@ -34,10 +34,19 @@ class VectorRetriever(BaseRetriever):
         # Step 3: Format output
         chunks = []
         for r in results:
+            # Ensure mandatory production metadata exists
+            metadata = r.get("metadata", {})
+            chunk_id = metadata.get("chunk_id") or f"{metadata.get('source_file')}_{metadata.get('chunk_index')}"
+            
             chunks.append({
                 "content": r["content"],
                 "score": float(r["score"]),
-                "metadata": r.get("metadata", {})
+                "metadata": {
+                    "chunk_id": chunk_id,
+                    "document_id": metadata.get("source_file"),
+                    "domain": domain,
+                    **metadata
+                }
             })
 
         return {
