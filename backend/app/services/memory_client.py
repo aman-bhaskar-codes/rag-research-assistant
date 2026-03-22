@@ -8,9 +8,11 @@ from memory.config.redis import get_redis
 from memory.cache.recent_cache import RecentCache
 from memory.services.personalization_service import PersonalizationService
 
-# Shared infrastructure: RAG Embedder
 from rag_engine.embeddings.ollama_embedder import OllamaEmbedder
 from rag_engine.embeddings.base import BaseEmbedder
+from app.utils.production_logger import get_trace_logger
+
+logger = get_trace_logger("service.memory")
 
 
 class MemoryClient:
@@ -61,6 +63,8 @@ class MemoryClient:
 
         # safety limit (prevent abuse)
         limit = min(limit, 20)
+        
+        logger.info(f"Retrieving chat history (user: {user_id}, session: {session_id}, limit: {limit})")
 
         return await self.memory.get_recent_messages(
             user_id,
@@ -82,6 +86,8 @@ class MemoryClient:
         if not response:
             return
 
+        logger.info(f"Persisting interaction history (user: {user_id}, session: {session_id})")
+
         await self.memory.save_interaction(
             user_id,
             session_id,
@@ -95,6 +101,8 @@ class MemoryClient:
         """
         if not user_id or not query:
             return []
+
+        logger.info(f"Retrieving semantic memory (user: {user_id}, query: {query[:30]}...)")
 
         return await self.memory.get_relevant_memory(user_id, query)
 

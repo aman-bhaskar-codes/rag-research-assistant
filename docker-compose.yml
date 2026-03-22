@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # --- BACKEND API ---
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/assistant_db
+      - REDIS_URL=redis://cache:6379/0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+      - cache
+
+  # --- DATABASE (PostgreSQL + pgvector) ---
+  db:
+    image: ankane/pgvector:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=assistant_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # --- CACHE (Redis) ---
+  cache:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

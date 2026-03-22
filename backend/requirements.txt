@@ -10,3 +10,4 @@ numpy
 scikit-learn
 python-dotenv
 httpx
+google-generativeai
