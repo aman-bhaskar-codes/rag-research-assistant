@@ -13,7 +13,7 @@ export async function uploadDocument(
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data } = await apiClient.post<Document>("/upload", formData, {
+  const { data } = await apiClient.post<Document>("/api/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -34,7 +34,7 @@ export async function uploadDocument(
  * Fetch all uploaded documents
  */
 export async function getDocuments(): Promise<Document[]> {
-  const { data } = await apiClient.get<Document[]>("/documents");
+  const { data } = await apiClient.get<Document[]>("/api/documents");
   return data;
 }
 
@@ -42,5 +42,5 @@ export async function getDocuments(): Promise<Document[]> {
  * Delete a document
  */
 export async function deleteDocument(documentId: string): Promise<void> {
-  await apiClient.delete(`/documents/${documentId}`);
+  await apiClient.delete(`/api/documents/${documentId}`);
 }

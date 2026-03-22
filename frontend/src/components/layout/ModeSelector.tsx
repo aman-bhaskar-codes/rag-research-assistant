@@ -22,17 +22,36 @@ export default function ModeSelector() {
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
       />
 
-      {modes.map((m) => (
-        <button
-          key={m}
-          onClick={() => setMode(m)}
-          className={`relative z-10 px-4 py-1.5 text-xs font-semibold transition-colors duration-200 w-28 text-center flex items-center justify-center ${
-            mode === m ? "text-white shadow-sm" : "text-gray-400 hover:text-gray-200"
-          }`}
-        >
-          {MODE_CONFIG[m].label}
-        </button>
-      ))}
+      {modes.map((m) => {
+        const config = MODE_CONFIG[m];
+        const isSelected = mode === m;
+        const isDisabled = 'disabled' in config && config.disabled;
+
+        return (
+          <button
+            key={m}
+            onClick={() => !isDisabled && setMode(m)}
+            disabled={isDisabled}
+            className={`relative z-10 px-4 py-1.5 text-[10px] font-bold tracking-tight transition-all duration-300 w-32 text-center flex flex-col items-center justify-center gap-0.5 ${
+              isSelected 
+                ? "text-white scale-105" 
+                : isDisabled 
+                  ? "text-gray-600 cursor-not-allowed opacity-60 grayscale bg-gray-900/40" 
+                  : "text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              {isDisabled && <span className="text-[8px]">🔒</span>}
+              {config.label}
+            </span>
+            {isDisabled && config.badge && (
+              <span className="text-[7px] bg-red-500/10 text-red-500/80 px-1 py-0.5 rounded border border-red-500/20 uppercase tracking-tighter scale-90 -mt-0.5">
+                {config.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

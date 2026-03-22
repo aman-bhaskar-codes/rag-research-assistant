@@ -22,6 +22,9 @@ export default function ChatInput() {
   const handleSend = async () => {
     if (!input.trim()) return;
 
+    const user_id = settings.user_id || "default_user"; // Ensure we have a user_id
+    const session_id = useChatStore.getState().selectedChatId || uuidv4();
+
     const userMessage = {
       id: uuidv4(),
       role: "user" as const,
@@ -31,43 +34,56 @@ export default function ChatInput() {
 
     addMessage(userMessage);
     
-    // We pass a dummy controller since the user's code relies on manual startStreaming
-    startStreaming(new AbortController());
+    const controller = new AbortController();
+    startStreaming(controller);
 
     let accumulated = "";
+    let metadata: any = null;
 
-    await streamChat({
-      query: input,
-      metadata: {
+    await streamChat(
+      {
+        query: input,
+        user_id,
+        session_id,
         mode,
         model: settings.model,
+        debug: settings.debug,
         rag: {
           strategy: settings.rag.strategy,
           top_k: settings.rag.top_k,
         },
       },
-
-      onToken: (token) => {
-        accumulated += token;
-        updatePartial(accumulated);
+      {
+        onToken: (token) => {
+          accumulated += token;
+          updatePartial(accumulated);
+        },
+        onMeta: (meta) => {
+          // Store metadata (sources, telemetry, etc.)
+          metadata = meta;
+        },
+        onDone: () => {
+          finishStreaming({
+            id: uuidv4(),
+            role: "assistant",
+            content: accumulated,
+            sources: metadata?.chunks || [], // Map backend "chunks" to "sources"
+            metadata: { 
+              mode, 
+              latency: metadata?.latency, 
+              strategy: metadata?.strategy || settings.rag.strategy,
+              model: metadata?.model || settings.model
+            },
+            createdAt: new Date().toISOString(),
+          });
+        },
+        onError: (err) => {
+          console.error(err);
+          setError(err instanceof Error ? err.message : String(err));
+        },
       },
-
-      onDone: (data) => {
-        finishStreaming({
-          id: uuidv4(),
-          role: "assistant",
-          content: accumulated,
-          sources: data?.sources || [],
-          metadata: { mode, latency: data?.latency, strategy: settings.rag.strategy, chunks: data?.chunks || [] },
-          createdAt: new Date().toISOString(),
-        });
-      },
-
-      onError: (err) => {
-        console.error(err);
-        setError(err instanceof Error ? err.message : String(err));
-      },
-    });
+      controller.signal
+    );
 
     setInput("");
   };

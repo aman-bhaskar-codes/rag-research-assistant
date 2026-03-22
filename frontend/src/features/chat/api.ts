@@ -7,7 +7,7 @@ import type { Chat, ChatListItem } from "./types";
  * Fetch all chats (sidebar list)
  */
 export async function getChats(): Promise<ChatListItem[]> {
-  const { data } = await apiClient.get<ChatListItem[]>("/chats");
+  const { data } = await apiClient.get<ChatListItem[]>("/api/history");
   return data;
 }
 
@@ -15,7 +15,7 @@ export async function getChats(): Promise<ChatListItem[]> {
  * Fetch a single chat with full messages
  */
 export async function getChat(chatId: string): Promise<Chat> {
-  const { data } = await apiClient.get<Chat>(`/chats/${chatId}`);
+  const { data } = await apiClient.get<Chat>(`/api/history/${chatId}`);
   return data;
 }
 
@@ -23,7 +23,7 @@ export async function getChat(chatId: string): Promise<Chat> {
  * Create a new chat session
  */
 export async function createChat(): Promise<Chat> {
-  const { data } = await apiClient.post<Chat>("/chats");
+  const { data } = await apiClient.post<Chat>("/api/history");
   return data;
 }
 
@@ -31,7 +31,7 @@ export async function createChat(): Promise<Chat> {
  * Delete a chat session
  */
 export async function deleteChat(chatId: string): Promise<void> {
-  await apiClient.delete(`/chats/${chatId}`);
+  await apiClient.delete(`/api/history/${chatId}`);
 }
 
 

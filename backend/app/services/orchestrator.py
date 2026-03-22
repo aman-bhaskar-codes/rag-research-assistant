@@ -106,9 +106,26 @@ class Orchestrator:
             yield "[ERROR] Disconnection from intelligence layer. Contact support."
             return
 
-        # 5. DEBUG INFO (SSE handled by route)
-        if request.debug:
-            yield f"\n\n--- ELITE TELEMETRY ---\n{json.dumps(debug_info, indent=2)}"
+        # 5. STRUCTURED METADATA (For Frontend Integration)
+        final_metadata = {
+            "type": "metadata",
+            "latency": latency_breakdown,
+            "strategy": strategy,
+            "model": model,
+            "memory_hits": len(memory_context),
+            "chunks": [
+                {
+                    "title": c.get("metadata", {}).get("title") or f"Document Chunk {i+1}",
+                    "content": c["content"],
+                    "score": c.get("score", 0)
+                } 
+                for i, c in enumerate(chunks)
+            ]
+        }
+        
+        # In debug mode, we can also print to console or yield as raw JSON
+        # The frontend streamChat will parse this JSON
+        yield json.dumps(final_metadata)
 
         # 6. ASYNC PERSISTENCE (Non-blocking)
         asyncio.create_task(

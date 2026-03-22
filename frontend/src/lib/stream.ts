@@ -1,30 +1,38 @@
-export async function streamChat({
-  query,
-  metadata,
-  onToken,
-  onDone,
-  onError,
-}: {
-  query: string;
-  metadata?: Record<string, any>;
+import { API_BASE_URL } from "@/config/constants";
+
+export interface StreamCallbacks {
   onToken: (token: string) => void;
-  onDone: (data?: any) => void;
+  onMeta?: (meta: any) => void;
+  onDone: () => void;
   onError: (err: any) => void;
-}) {
+}
+
+export async function streamChat(
+  payload: any,
+  callbacks: StreamCallbacks,
+  signal?: AbortSignal
+) {
+  const { onToken, onMeta, onDone, onError } = callbacks;
+
   try {
-    const res = await fetch("http://localhost:8000/chat", {
+    const res = await fetch(`${API_BASE_URL}/query`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, ...metadata }),
+      body: JSON.stringify(payload),
+      signal,
     });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `HTTP error! status: ${res.status}`);
+    }
 
     if (!res.body) throw new Error("No response body");
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-
     let buffer = "";
 
     while (true) {
@@ -33,33 +41,40 @@ export async function streamChat({
 
       buffer += decoder.decode(value, { stream: true });
 
-      // Split by newline (SSE-style or chunked JSON)
-      const parts = buffer.split("\n");
+      // SSE chunks are separated by double newlines
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
 
-      for (let i = 0; i < parts.length - 1; i++) {
-        const chunk = parts[i].trim();
-        if (!chunk) continue;
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        
+        const data = line.replace("data: ", "").trim();
+        if (!data) continue;
 
         try {
-          const parsed = JSON.parse(chunk);
-
-          if (parsed.token) {
-            onToken(parsed.token);
-          }
-
-          if (parsed.done) {
-            onDone(parsed);
+          // Standard SSE: parse as JSON
+          const parsed = JSON.parse(data);
+          
+          if (typeof parsed === "string") {
+            onToken(parsed);
+          } else if (parsed && typeof parsed === "object") {
+            if (parsed.type === "metadata") {
+              onMeta?.(parsed);
+            } else {
+              // Fallback for other JSON types or raw tokens that happen to be JSON
+              onMeta?.(parsed);
+            }
           }
         } catch (e) {
-          // ignore partial JSON
+          // If not JSON, it's a raw token string from the LLM
+          onToken(data);
         }
       }
-
-      buffer = parts[parts.length - 1];
     }
 
     onDone();
-  } catch (err) {
+  } catch (err: any) {
+    if (err.name === 'AbortError') return;
     onError(err);
   }
 }

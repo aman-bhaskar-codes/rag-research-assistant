@@ -33,11 +33,16 @@ export default function CommandPalette() {
         {filtered.map((cmd, i) => (
           <div
             key={i}
-            onClick={() => {
+            onClick={async () => {
               closeModal();
-              if (cmd.action === "new_chat") location.reload();
-               else if (cmd.action === "debug") toggleDebug();
-              else openModal(cmd.action as any);
+              if (cmd.action === "new_chat") {
+                const { clearMessages } = (await import("@/features/chat/store")).useChatStore.getState();
+                clearMessages();
+              } else if (cmd.action === "debug") {
+                toggleDebug();
+              } else {
+                openModal(cmd.action as any);
+              }
             }}
             className="px-4 py-3 rounded-xl hover:bg-[#1E293B] cursor-pointer text-sm text-gray-300 transition-colors"
           >

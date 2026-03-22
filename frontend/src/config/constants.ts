@@ -1,15 +1,17 @@
 // ─── API Configuration ───────────────────────────────────────────────────────
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 // ─── Default Settings ────────────────────────────────────────────────────────
 
-export const DEFAULT_MODEL = "qwen";
+export const DEFAULT_MODEL = "auto";
 
 export const DEFAULT_TEMPERATURE = 0.7;
 
 export const DEFAULT_SETTINGS = {
+  user_id: "researcher_1",
+  debug: false,
   model: DEFAULT_MODEL,
   temperature: DEFAULT_TEMPERATURE,
   rag: {

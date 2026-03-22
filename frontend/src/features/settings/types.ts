@@ -15,6 +15,8 @@ export interface MemoryConfig {
 }
 
 export interface Settings {
+  user_id: string;
+  debug: boolean;
   model: string;
   temperature: number;
   rag: RAGConfig;
