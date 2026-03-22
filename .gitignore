@@ -19,3 +19,5 @@ node_modules/
 *.log
 __pycache__/
 .pytest_cache/
+.env.neon
+.env.example
