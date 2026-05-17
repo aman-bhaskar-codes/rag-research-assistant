@@ -1,13 +1,36 @@
-fastapi
-uvicorn
-pydantic
-pydantic-settings
-asyncpg
-redis
-ollama
-faiss-cpu
-numpy
-scikit-learn
-python-dotenv
-httpx
-google-generativeai
+# Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.9
+
+# Database
+asyncpg>=0.31.0
+sqlalchemy[asyncio]>=2.0.48
+alembic>=1.14.0
+pgvector>=0.4.2
+psycopg2-binary>=2.9.11
+
+# Cache
+redis>=5.2.0
+
+# AI / Embeddings
+sentence-transformers>=3.4.0
+fastembed>=0.4.0
+rank-bm25>=0.2.2
+faiss-cpu>=1.9.0
+
+# LLM Clients
+ollama>=0.4.4
+google-generativeai>=0.8.6
+
+# Utilities
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-dotenv>=1.2.2
+httpx>=0.28.1
+pdfplumber>=0.11.4
+loguru>=0.7.3
+tenacity>=9.0.0
+orjson>=3.10.0
+numpy>=1.26.0
+scikit-learn>=1.6.0

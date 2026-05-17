@@ -6,13 +6,13 @@ WORKDIR /build
 # Install uv (fast dependency installer)
 RUN pip install uv --no-cache-dir
 
-# Copy only dependency files first (layer cache optimisation)
-COPY pyproject.toml .
+# Copy requirements file
+COPY backend/requirements.txt ./requirements.txt
 
-# Install all production deps into a venv
+# Create venv and install dependencies
 RUN uv venv /venv && \
     . /venv/bin/activate && \
-    uv pip install -e . --no-cache
+    uv pip install -r requirements.txt --no-cache
 
 # ── Stage 2: production image ────────────────────────────────────
 FROM python:3.11-slim
@@ -38,8 +38,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-# CMD matches PYTHONPATH=/app → module = backend.app.main
-CMD ["uvicorn", "backend.app.main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8000", \
-     "--workers", "2"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

@@ -4,7 +4,7 @@
 services:
   # ── PostgreSQL + pgvector ─────────────────────────────
   db:
-    image: pgvector/pgvector:pg16-latest
+    image: pgvector/pgvector:0.8.0-pg16
     ports: ["5432:5432"]
     environment:
       POSTGRES_USER: postgres
