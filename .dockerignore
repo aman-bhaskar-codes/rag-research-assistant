@@ -1,0 +1,16 @@
+node_modules
+frontend
+.next
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.DS_Store
+*.log
+data/raw
+data/uploads
+.env
+.env.*
+!.env.example
+perplexity.md

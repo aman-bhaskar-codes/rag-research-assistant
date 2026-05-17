@@ -1,4 +1,3 @@
-# backend/app/database.py
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
@@ -12,11 +11,14 @@ engine = create_async_engine(
     echo=settings.env == "development",
     pool_size=10,
     max_overflow=20,
-    pool_pre_ping=True,  # auto-reconnect on stale connections
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 AsyncSessionLocal = async_sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
 )
 
 
@@ -25,13 +27,13 @@ class Base(DeclarativeBase):
 
 
 async def init_db():
-    """Enable pgvector extension and create all tables."""
     async with engine.begin() as conn:
-        # Must enable pgvector BEFORE creating tables with VECTOR columns
+        # Enable extensions
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        from backend.app import models  # noqa: F401 — registers models
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        from backend.app import models  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
-    logger.success("Database initialised with pgvector extension.")
+    logger.success("✅ Database ready with pgvector + pg_trgm")
 
 
 async def close_db():
@@ -39,7 +41,6 @@ async def close_db():
 
 
 async def get_session():
-    """FastAPI dependency for route handlers."""
     async with AsyncSessionLocal() as session:
         try:
             yield session

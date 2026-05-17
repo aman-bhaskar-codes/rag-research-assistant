@@ -1,47 +1,52 @@
-# docker-compose.yml
-# Note: "version:" key removed — deprecated in Compose V2
+# Compose V2 — no version key needed
 
 services:
-  # ── PostgreSQL + pgvector ─────────────────────────────
+
+  # ── PostgreSQL + pgvector ────────────────────────────────────────
   db:
     image: pgvector/pgvector:0.8.0-pg16
-    ports: ["5432:5432"]
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: assistant_db
+      POSTGRES_DB: perplexity_db
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d assistant_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d perplexity_db"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
 
-  # ── Redis Cache ───────────────────────────────────────
+  # ── Redis Cache ──────────────────────────────────────────────────
   cache:
     image: redis:7-alpine
-    ports: ["6379:6379"]
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save ""
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  # ── FastAPI Backend ───────────────────────────────────
+  # ── FastAPI Backend ──────────────────────────────────────────────
   api:
     build: .
-    ports: ["8000:8000"]
+    ports:
+      - "8000:8000"
     env_file: .env
-    depends_on:
-      db: { condition: service_healthy }
-      cache: { condition: service_healthy }
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/assistant_db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/perplexity_db
       - REDIS_URL=redis://cache:6379/0
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
