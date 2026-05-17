@@ -1,6 +1,6 @@
-"""Perplexity-style prompts that produce cited, structured answers."""
+"""Research Assistant prompts that produce cited, structured answers."""
 
-SYSTEM_PROMPT = """You are a research assistant like Perplexity AI.
+SYSTEM_PROMPT = """You are an AI-powered research assistant.
 
 You have been given search results and/or document excerpts as context.
 

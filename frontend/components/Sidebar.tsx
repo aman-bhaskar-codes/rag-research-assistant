@@ -22,7 +22,7 @@ export function Sidebar() {
             <div className="p-4 border-b border-plex-border">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-plex-accent rounded-lg flex items-center justify-center"><span className="text-black font-bold text-sm">P</span></div>
-                <span className="font-semibold text-plex-text">Perplexity</span>
+                <span className="font-semibold text-plex-text">Research Assistant</span>
               </div>
             </div>
             <div className="p-3">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Perplexity Clone — Ollama Research Assistant",
+  title: "Research Assistant — AI-Powered Search Engine",
   description: "Research assistant powered by local Ollama models + pgvector",
 };
 

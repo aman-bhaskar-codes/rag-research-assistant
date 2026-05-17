@@ -113,7 +113,7 @@ export const useStore = create<AppState>()(
         }),
     }),
     {
-      name: "perplexity-clone-store",
+      name: "research-assistant-store",
       partialize: (s) => ({
         selectedModel: s.selectedModel,
         focusMode: s.focusMode,

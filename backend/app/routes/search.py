@@ -1,5 +1,5 @@
 """
-Core Perplexity-style search endpoint.
+Core Research Assistant search endpoint.
 Streams: sources → answer tokens → related questions → done
 """
 import json
@@ -43,7 +43,7 @@ class SearchRequest(BaseModel):
     use_hyde: bool = False  # Disabled by default for speed; enable for academic mode
 
 
-async def _stream_perplexity(
+async def _stream_search(
     query: str,
     session_id: str,
     focus_mode: str,
@@ -237,7 +237,7 @@ async def search_stream(
     model = select_model(req.focus_mode, req.model)
 
     return StreamingResponse(
-        _stream_perplexity(
+        _stream_search(
             query=req.query,
             session_id=req.session_id,
             focus_mode=req.focus_mode,

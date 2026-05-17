@@ -24,7 +24,7 @@ logger.add(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Starting Perplexity Clone...")
+    logger.info("🚀 Starting Research Assistant...")
     await init_db()
     await init_redis()
     logger.success("✅ All systems ready")
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Perplexity Clone API",
+    title="Research Assistant API",
     description="Research Assistant with Ollama + pgvector + Web Search",
     version="2.0.0",
     lifespan=lifespan,
