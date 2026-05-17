@@ -8,16 +8,17 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Environment files — NEVER commit secrets
 .env
 .env.*
 !.env.example
+*.pem
+secrets/
 
 # OS / Cache Files
 .DS_Store
 .next/
 node_modules/
 *.log
-__pycache__/
 .pytest_cache/
-.env.neon
-.env.example

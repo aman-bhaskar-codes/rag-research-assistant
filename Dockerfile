@@ -1,30 +1,45 @@
-# Use an official Python runtime as a parent image
-FROM python:3.13-slim
+# ── Stage 1: dependency resolver ─────────────────────────────────
+FROM python:3.11-slim AS builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/backend
+WORKDIR /build
 
-# Set work directory
+# Install uv (fast dependency installer)
+RUN pip install uv --no-cache-dir
+
+# Copy only dependency files first (layer cache optimisation)
+COPY pyproject.toml .
+
+# Install all production deps into a venv
+RUN uv venv /venv && \
+    . /venv/bin/activate && \
+    uv pip install -e . --no-cache
+
+# ── Stage 2: production image ────────────────────────────────────
+FROM python:3.11-slim
+
+# System libs needed for psycopg2 & sentence-transformers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 curl && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Copy venv from builder — no pip install in prod image
+COPY --from=builder /venv /venv
 
-# Install Python dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy application source
+COPY backend/ ./backend/
 
-# Copy the rest of the application
-COPY . .
+# PYTHONPATH points at /app so imports are "backend.app.x"
+ENV PYTHONPATH=/app
+ENV PATH="/venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Expose the API port
 EXPOSE 8000
 
-# Run the FastAPI application
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD matches PYTHONPATH=/app → module = backend.app.main
+CMD ["uvicorn", "backend.app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "2"]
