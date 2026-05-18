@@ -31,7 +31,7 @@ async def init_db():
         # Enable extensions
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-        from backend.app import models  # noqa: F401
+        from backend.app import models, agent_models  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
     logger.success("✅ Database ready with pgvector + pg_trgm")
 

@@ -8,7 +8,7 @@ import sys
 from backend.app.config import get_settings
 from backend.app.database import init_db, close_db
 from backend.memory.short_term import init_redis, close_redis
-from backend.app.routes import search, documents, health, history, models, feedback
+from backend.app.routes import search, documents, health, history, models, feedback, agent
 
 settings = get_settings()
 
@@ -59,3 +59,4 @@ app.include_router(documents.router, prefix="/documents", tags=["documents"])
 app.include_router(history.router,   prefix="/history",   tags=["history"])
 app.include_router(models.router,    prefix="/models",    tags=["models"])
 app.include_router(feedback.router,  prefix="/feedback",  tags=["feedback"])
+app.include_router(agent.router,     prefix="/agent",     tags=["agent"])

@@ -38,3 +38,11 @@ orjson>=3.10.0
 loguru>=0.7.3
 tenacity>=9.0.0
 pdfplumber>=0.11.4
+
+# Agent / Digital Twin
+duckduckgo-search>=6.0.0
+arxiv>=2.1.0
+wikipedia>=1.4.0
+langfuse>=2.50.0
+networkx>=3.0
+matplotlib>=3.8.0
